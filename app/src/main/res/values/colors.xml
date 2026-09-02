@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="orange_primary">#EF5707</color>
+
+    <!-- Cor usada pelo ícone padrão do launcher gerado pelo Android Studio -->
+    <color name="ic_launcher_background">#EF5707</color>
+</resources>

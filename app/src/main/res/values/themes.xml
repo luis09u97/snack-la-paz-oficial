@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Tema aplicado só no instante de abertura, antes do Compose carregar -->
+    <style name="Theme.SnackLaPaz.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/orange_primary</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/logo_icon</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/orange_primary</item>
+        <item name="postSplashScreenTheme">@style/Theme.SnackLaPaz</item>
+    </style>
+
+    <!-- Tema normal do app, usado depois da splash nativa -->
+    <style name="Theme.SnackLaPaz" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/orange_primary</item>
+    </style>
+
+</resources>
