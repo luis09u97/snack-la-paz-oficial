@@ -1,6 +1,10 @@
+begin transaction;
+
 drop table if exists pagamentos cascade;
 drop table if exists itens_pedido cascade;
 drop table if exists pedidos cascade;
+drop table if exists fretes cascade;
+drop table if exists rasas cascade;
 drop table if exists enderecos cascade;
 drop table if exists clientes cascade;
 drop table if exists usuario_perfil cascade;
@@ -79,6 +83,7 @@ create table if not exists pedidos (
     id_endereco_entrega int not null references enderecos(id_endereco),
     data_pedido timestamp not null default now(),
     status varchar not null,
+    valor_frete decimal(10, 2) not null default 0,
     valor_total decimal(10, 2) not null
 );
 
@@ -127,3 +132,5 @@ using (status = 'ATIVO');
 
 grant usage on schema public to anon, authenticated;
 grant select on categorias, produtos to anon, authenticated;
+
+commit;

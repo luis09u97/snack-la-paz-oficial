@@ -1,3 +1,5 @@
+begin transaction;
+
 alter table produtos add column if not exists ingredientes text;
 
 insert into categorias (id_categoria, nome, descricao, status)
@@ -20,7 +22,7 @@ values
     (5, 1, 'Sopa de Maní', 'Sopa boliviana cremosa de amendoim com batata palha e ervas.', 22.00, 24, 'https://jacaranda.com.bo/wp-content/uploads/2025/01/IMG_Jacaranda_Sopa_Mani.webp', 'Amendoim, carne, batata, arroz ou macarrão, salsa, cebola, alho e especiarias.', 'ATIVO'),
     (6, 1, 'Pique a lo Macho', 'Prato boliviano farto com carne, salsicha, batatas, ovo e molhos.', 34.00, 16, 'https://static.wixstatic.com/media/929756_cff315b5f72b4f9c810215e96ba1fb37~mv2.jpg/v1/fill/w_626%2Ch_648%2Cal_c%2Cq_85%2Cusm_0.66_1.00_0.01%2Cenc_avif%2Cquality_auto/929756_cff315b5f72b4f9c810215e96ba1fb37~mv2.jpg', 'Carne bovina, salsicha, batata, ovo, tomate, cebola, pimentão e molho picante.', 'ATIVO'),
     (7, 1, 'Silpancho', 'Carne empanada fina sobre arroz, batatas, salada e ovo frito.', 29.00, 18, 'https://images.mrcook.app/recipe-image/019d4647-d948-7024-b7c7-0472a5e479ea/019d4647-dfb5-7c0c-9013-1a4791d2635d?cacheKey=V2VkLCAwMSBBcHIgMjAyNiAwMjoyMTo0NyBHTVQ%3D', 'Carne bovina, arroz, batata, ovo, tomate, cebola roxa, farinha de rosca e temperos.', 'ATIVO'),
-    (8, 2, 'Coca-Kina', 'Refrigerante boliviano gelado com sabor marcante e tradicional.', 6.00, 40, 'https://compro.bo/cdn/shop/files/COKAQUINA330ML_1200x1200.jpg?v=1700956276', 'Água gaseificada, açúcar, extratos vegetais, acidulante e aroma.', 'ATIVO'),
+    (8, 2, 'Coca Quina', 'Refrigerante boliviano gelado com sabor marcante e tradicional.', 6.00, 40, 'https://compro.bo/cdn/shop/files/COKAQUINA330ML_1200x1200.jpg?v=1700956276', 'Água gaseificada, açúcar, extratos vegetais, acidulante e aroma.', 'ATIVO'),
     (9, 2, 'Simba', 'Refrigerante Simba gelado, ideal para acompanhar lanches bolivianos.', 8.00, 32, 'https://farmacorp.com/cdn/shop/files/909714_1200x1200.jpg?v=1773894260', 'Água gaseificada, açúcar, aroma de fruta, acidulante e conservante.', 'ATIVO'),
     (10, 2, 'Pura Vida', 'Néctar de fruta Pura Vida, refrescante e bem colorido.', 8.00, 30, 'https://cdn.shopify.com/s/files/1/0517/5495/9018/files/7771259756798.jpg?v=1769662420', 'Água, polpa de fruta, açúcar, vitamina C, acidulante e aroma.', 'ATIVO'),
     (11, 2, 'Coca-Cola', 'Coca-Cola gelada para acompanhar qualquer pedido.', 7.00, 45, 'https://mir-s3-cdn-cf.behance.net/project_modules/fs/c1dd12131268523.61920dae18e81.jpg', 'Água gaseificada, açúcar, extrato de noz de cola, cafeína, corante caramelo e aroma.', 'ATIVO'),
@@ -52,3 +54,5 @@ from categorias;
 
 select setval(pg_get_serial_sequence('produtos', 'id_produto'), coalesce(max(id_produto), 1))
 from produtos;
+
+commit;

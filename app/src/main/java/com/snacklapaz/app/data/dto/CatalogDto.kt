@@ -80,6 +80,7 @@ data class PedidoDto(
     @SerialName("id_endereco_entrega") val idEnderecoEntrega: Int,
     @SerialName("data_pedido") val dataPedido: String? = null,
     val status: String,
+    @SerialName("valor_frete") val valorFrete: Double = 0.0,
     @SerialName("valor_total") val valorTotal: Double
 )
 
