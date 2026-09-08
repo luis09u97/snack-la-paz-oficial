@@ -16,13 +16,13 @@ class SearchViewModel(
     private val repository: ProductRepository = ProductRepository()
 ) : ViewModel() {
 
-    var categories by mutableStateOf<List<Category>>(emptyList())
+    var categories by mutableStateOf<List<Category>>(sampleCategories)
         private set
 
-    var products by mutableStateOf<List<Product>>(emptyList())
+    var products by mutableStateOf<List<Product>>(allSampleProducts)
         private set
 
-    var isLoading by mutableStateOf(true)
+    var isLoading by mutableStateOf(false)
         private set
 
     var errorMessage by mutableStateOf<String?>(null)
@@ -34,15 +34,21 @@ class SearchViewModel(
 
     fun loadData() {
         viewModelScope.launch {
-            isLoading = true
+            isLoading = products.isEmpty()
             errorMessage = null
             try {
                 val remoteCategories = repository.getCategories()
                 val remoteProducts = repository.getProducts()
-                categories = remoteCategories.ifEmpty { sampleCategories }
-                products = remoteProducts.ifEmpty { allSampleProducts }
+                if (remoteCategories.isNotEmpty()) {
+                    categories = remoteCategories
+                }
+                if (remoteProducts.isNotEmpty()) {
+                    products = remoteProducts
+                }
             } catch (e: Exception) {
-                errorMessage = "Nao foi possivel carregar a busca. Tente novamente."
+                if (products.isEmpty()) {
+                    errorMessage = "Nao foi possivel carregar a busca. Tente novamente."
+                }
             } finally {
                 isLoading = false
             }

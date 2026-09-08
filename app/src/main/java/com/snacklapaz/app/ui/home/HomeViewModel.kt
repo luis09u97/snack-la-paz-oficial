@@ -16,13 +16,13 @@ class HomeViewModel(
     private val repository: ProductRepository = ProductRepository()
 ) : ViewModel() {
 
-    var categories by mutableStateOf<List<Category>>(emptyList())
+    var categories by mutableStateOf<List<Category>>(sampleCategories)
         private set
 
-    var products by mutableStateOf<List<Product>>(emptyList())
+    var products by mutableStateOf<List<Product>>(allSampleProducts)
         private set
 
-    var isLoading by mutableStateOf(true)
+    var isLoading by mutableStateOf(false)
         private set
 
     var errorMessage by mutableStateOf<String?>(null)
@@ -34,15 +34,21 @@ class HomeViewModel(
 
     fun loadData() {
         viewModelScope.launch {
-            isLoading = true
+            isLoading = products.isEmpty()
             errorMessage = null
             try {
                 val remoteCategories = repository.getCategories()
                 val remoteProducts = repository.getProducts()
-                categories = remoteCategories.ifEmpty { sampleCategories }
-                products = remoteProducts.ifEmpty { allSampleProducts }
+                if (remoteCategories.isNotEmpty()) {
+                    categories = remoteCategories
+                }
+                if (remoteProducts.isNotEmpty()) {
+                    products = remoteProducts
+                }
             } catch (e: Exception) {
-                errorMessage = "Não foi possível carregar os produtos. Tente novamente."
+                if (products.isEmpty()) {
+                    errorMessage = "Não foi possível carregar os produtos. Tente novamente."
+                }
             } finally {
                 isLoading = false
             }

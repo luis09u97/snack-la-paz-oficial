@@ -38,9 +38,12 @@ import com.snacklapaz.app.ui.components.EmptyState
 import com.snacklapaz.app.ui.components.ProductCard
 import com.snacklapaz.app.ui.components.ProductDetailsDialog
 import com.snacklapaz.app.ui.components.ProductCardSkeleton
+import com.snacklapaz.app.ui.components.SnackImagePreloader
 import com.snacklapaz.app.ui.components.SnackTextField
 import com.snacklapaz.app.ui.home.model.Category
 import com.snacklapaz.app.ui.home.model.Product
+import com.snacklapaz.app.ui.home.model.galleryImages
+import com.snacklapaz.app.ui.home.model.recommendationsFor
 import com.snacklapaz.app.ui.theme.CreamBackground
 import com.snacklapaz.app.ui.theme.GrayDark
 import com.snacklapaz.app.ui.theme.OrangePrimary
@@ -56,15 +59,21 @@ fun SearchScreen(
     var selectedProduct by remember { mutableStateOf<Product?>(null) }
 
     selectedProduct?.let { product ->
+        val currentProduct = searchViewModel.products.firstOrNull { it.id == product.id } ?: product
         ProductDetailsDialog(
-            product = product,
+            product = currentProduct,
+            suggestions = searchViewModel.products.recommendationsFor(currentProduct),
             onDismiss = { selectedProduct = null },
+            onFavoriteClick = { searchViewModel.toggleFavorite(currentProduct.id) },
             onAddToCartClick = {
-                cartViewModel.addToCart(product)
+                cartViewModel.addToCart(currentProduct)
                 selectedProduct = null
-            }
+            },
+            onSuggestionClick = { selectedProduct = it },
+            onSuggestionAddClick = { cartViewModel.addToCart(it) }
         )
     }
+    SnackImagePreloader(models = searchViewModel.products.flatMap { it.galleryImages() })
 
     val filtered by remember(query, selectedCategoryId, searchViewModel.products) {
         derivedStateOf {

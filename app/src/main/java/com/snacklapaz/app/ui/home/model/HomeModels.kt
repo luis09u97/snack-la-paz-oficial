@@ -105,7 +105,7 @@ val allSampleProducts = listOf(
     ),
     Product(
         id = "8",
-        name = "Coca-Kina",
+        name = "Coca Quina",
         price = 6.0,
         rating = 4.5f,
         imageUrl = "https://compro.bo/cdn/shop/files/COKAQUINA330ML_1200x1200.jpg?v=1700956276",

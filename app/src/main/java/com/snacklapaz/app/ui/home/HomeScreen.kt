@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DeliveryDining
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SearchOff
@@ -34,25 +36,36 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.foundation.Image
 import com.snacklapaz.app.ui.cart.CartViewModel
 import com.snacklapaz.app.ui.components.EmptyState
 import com.snacklapaz.app.ui.components.ProductCard
 import com.snacklapaz.app.ui.components.ProductDetailsDialog
 import com.snacklapaz.app.ui.components.ProductCardSkeleton
+import com.snacklapaz.app.ui.components.SnackImagePreloader
 import com.snacklapaz.app.ui.components.SnackTextField
 import com.snacklapaz.app.ui.home.model.Category
 import com.snacklapaz.app.ui.home.model.Product
+import com.snacklapaz.app.ui.home.model.galleryImages
+import com.snacklapaz.app.ui.home.model.recommendationsFor
 import com.snacklapaz.app.ui.theme.CreamBackground
 import com.snacklapaz.app.ui.theme.GrayDark
+import com.snacklapaz.app.ui.theme.GrayMedium
 import com.snacklapaz.app.ui.theme.OrangeLight
+import com.snacklapaz.app.ui.theme.OrangeDeep
 import com.snacklapaz.app.ui.theme.OrangePrimary
 import com.snacklapaz.app.ui.theme.OrangeSoft
 import com.snacklapaz.app.ui.theme.White
 import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.ui.res.painterResource
+import com.snacklapaz.app.R
 
 @Composable
 fun HomeScreen(
@@ -117,13 +130,18 @@ private fun HomeContent(
     var selectedCategoryId by remember { mutableStateOf<String?>(null) }
 
     selectedProduct?.let { product ->
+        val currentProduct = products.firstOrNull { it.id == product.id } ?: product
         ProductDetailsDialog(
-            product = product,
+            product = currentProduct,
+            suggestions = products.recommendationsFor(currentProduct),
             onDismiss = { selectedProduct = null },
+            onFavoriteClick = { onFavoriteToggle(currentProduct.id) },
             onAddToCartClick = {
-                onAddToCart(product)
+                onAddToCart(currentProduct)
                 selectedProduct = null
-            }
+            },
+            onSuggestionClick = { selectedProduct = it },
+            onSuggestionAddClick = onAddToCart
         )
     }
 
@@ -137,6 +155,7 @@ private fun HomeContent(
     }
     val featured = filteredProducts.take(7)
     val popular = filteredProducts.drop(7)
+    SnackImagePreloader(models = products.flatMap { it.galleryImages() })
 
     LazyColumn(
         modifier = Modifier
@@ -236,23 +255,46 @@ private fun HomeHeader() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(OrangePrimary)
-            .padding(horizontal = 20.dp, vertical = 20.dp),
+            .background(
+                Brush.horizontalGradient(
+                    colors = listOf(OrangeDeep, OrangePrimary)
+                )
+            )
+            .padding(horizontal = 18.dp, vertical = 18.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
-            Text(
-                text = "Olá! 👋",
-                color = White,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "O que vamos saborear hoje?",
-                color = White.copy(alpha = 0.9f),
-                fontSize = 14.sp
-            )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Surface(
+                shape = CircleShape,
+                color = White.copy(alpha = 0.16f),
+                modifier = Modifier.size(54.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Image(
+                        painter = painterResource(id = R.drawable.logo_icon),
+                        contentDescription = "Snack La Paz",
+                        modifier = Modifier.size(42.dp)
+                    )
+                }
+            }
+
+            Column(modifier = Modifier.padding(start = 12.dp)) {
+                Text(
+                    text = "Snack La Paz",
+                    color = White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+                Text(
+                    text = "Comidas e bebidas bolivianas",
+                    color = White.copy(alpha = 0.88f),
+                    fontSize = 13.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
 
         Surface(
@@ -274,29 +316,55 @@ private fun HomeHeader() {
 @Composable
 private fun PromoBanner() {
     Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = OrangeSoft,
+        shape = RoundedCornerShape(16.dp),
+        color = White,
+        shadowElevation = 2.dp,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 8.dp)
-            .height(120.dp)
+            .height(128.dp)
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize().padding(20.dp),
-            contentAlignment = Alignment.CenterStart
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .size(138.dp)
+                    .clip(CircleShape)
+                    .background(OrangeSoft)
+            )
             Column {
-                Text(
-                    text = "🇧🇴 Sabores autênticos",
-                    color = OrangePrimary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 17.sp
-                )
-                Text(
-                    text = "Frete grátis no seu primeiro pedido",
-                    color = GrayDark,
-                    fontSize = 13.sp
-                )
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.DeliveryDining,
+                            contentDescription = null,
+                            tint = OrangePrimary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Text(
+                            text = "Entrega rápida",
+                            color = OrangePrimary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+                    Text(
+                        text = "Peça salteñas, broaster, mocochinche e doces bolivianos sem sair de casa.",
+                        color = GrayDark,
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp,
+                        modifier = Modifier
+                            .fillMaxWidth(0.78f)
+                            .padding(top = 8.dp)
+                    )
+                    Text(
+                        text = "Cardápio preparado para hoje",
+                        color = GrayMedium,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
             }
         }
     }

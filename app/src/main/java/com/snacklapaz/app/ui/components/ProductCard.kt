@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,9 +18,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Icon
@@ -38,12 +38,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import com.snacklapaz.app.ui.theme.ErrorRed
 import com.snacklapaz.app.ui.theme.GrayBorder
 import com.snacklapaz.app.ui.theme.GrayDark
 import com.snacklapaz.app.ui.theme.GrayLight
 import com.snacklapaz.app.ui.theme.GrayMedium
+import com.snacklapaz.app.ui.theme.OrangeLight
 import com.snacklapaz.app.ui.theme.OrangePrimary
 import com.snacklapaz.app.ui.theme.White
 
@@ -65,9 +65,10 @@ fun ProductCard(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         color = White,
-        shadowElevation = 2.dp,
+        shadowElevation = 1.dp,
+        border = BorderStroke(1.dp, GrayBorder.copy(alpha = 0.65f)),
         modifier = modifier
             .clickable(onClick = onClick)
     ) {
@@ -77,34 +78,16 @@ fun ProductCard(
                     .fillMaxWidth()
                     .aspectRatio(1.1f)
             ) {
-                if (imageUrl.isNullOrBlank()) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1.1f)
-                            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                            .background(GrayLight)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Restaurant,
-                            contentDescription = name,
-                            tint = GrayMedium,
-                            modifier = Modifier.size(42.dp)
-                        )
-                    }
-                } else {
-                    AsyncImage(
-                        model = imageUrl,
-                        contentDescription = name,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1.1f)
-                            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                            .background(GrayLight)
-                    )
-                }
+                SnackAsyncImage(
+                    model = imageUrl,
+                    contentDescription = name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1.05f)
+                        .clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp))
+                        .background(GrayLight)
+                )
 
                 FavoriteToggleButton(
                     isFavorite = isFavorite,
@@ -127,17 +110,27 @@ fun ProductCard(
                 Spacer_4dp()
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Filled.Star,
-                        contentDescription = "Avaliação",
-                        tint = OrangePrimary,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Text(
-                        text = " $rating",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = GrayMedium
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = OrangeLight.copy(alpha = 0.75f)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Star,
+                                contentDescription = "Avaliação",
+                                tint = OrangePrimary,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Text(
+                                text = " $rating",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = GrayDark
+                            )
+                        }
+                    }
                 }
 
                 Spacer_4dp()
@@ -201,13 +194,21 @@ private fun FavoriteToggleButton(
 
 @Composable
 private fun AddToCartButton(onClick: () -> Unit) {
-    Icon(
-        imageVector = Icons.Filled.AddCircle,
-        contentDescription = "Adicionar ao carrinho",
-        tint = OrangePrimary,
+    Surface(
+        shape = CircleShape,
+        color = OrangePrimary,
         modifier = Modifier
-            .size(28.dp)
+            .size(32.dp)
             .clip(CircleShape)
             .clickable(onClick = onClick)
-    )
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = Icons.Filled.AddShoppingCart,
+                contentDescription = "Adicionar ao carrinho",
+                tint = White,
+                modifier = Modifier.size(17.dp)
+            )
+        }
+    }
 }
