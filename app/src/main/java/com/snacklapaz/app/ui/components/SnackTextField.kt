@@ -28,7 +28,9 @@ import androidx.compose.ui.unit.dp
 import com.snacklapaz.app.ui.theme.ErrorRed
 import com.snacklapaz.app.ui.theme.GrayBorder
 import com.snacklapaz.app.ui.theme.GrayMedium
+import com.snacklapaz.app.ui.theme.OrangeLight
 import com.snacklapaz.app.ui.theme.OrangePrimary
+import com.snacklapaz.app.ui.theme.OrangeSoft
 import com.snacklapaz.app.ui.theme.White
 
 /**
@@ -78,12 +80,14 @@ fun SnackTextField(
             keyboardOptions = KeyboardOptions(
                 keyboardType = if (isPassword) KeyboardType.Password else keyboardType
             ),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = White,
+                focusedContainerColor = OrangeSoft,
                 unfocusedContainerColor = White,
                 focusedBorderColor = OrangePrimary,
-                unfocusedBorderColor = GrayBorder,
+                unfocusedBorderColor = OrangeLight,
+                focusedLabelColor = OrangePrimary,
+                cursorColor = OrangePrimary,
                 errorBorderColor = ErrorRed
             ),
             modifier = Modifier.fillMaxWidth()

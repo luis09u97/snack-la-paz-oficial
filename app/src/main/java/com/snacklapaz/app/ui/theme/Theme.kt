@@ -23,11 +23,11 @@ private val LightColors = lightColorScheme(
     onErrorContainer = ErrorRed,
 
     background = CreamBackground,
-    onBackground = GrayDark,
+    onBackground = Ink,
 
     surface = White,
-    onSurface = GrayDark,
-    surfaceVariant = GrayLight,
+    onSurface = Ink,
+    surfaceVariant = OrangeMist,
     onSurfaceVariant = GrayMedium,
 
     outline = GrayBorder

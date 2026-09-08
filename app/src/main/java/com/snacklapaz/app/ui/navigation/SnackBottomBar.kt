@@ -4,12 +4,14 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -23,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.snacklapaz.app.ui.theme.GrayMedium
+import com.snacklapaz.app.ui.theme.OrangeLight
 import com.snacklapaz.app.ui.theme.OrangePrimary
 import com.snacklapaz.app.ui.theme.White
 
@@ -33,14 +36,14 @@ fun SnackBottomBar(
 ) {
     Surface(
         color = White,
-        shadowElevation = 8.dp,
+        shadowElevation = 10.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
-                .padding(horizontal = 4.dp),
+                .height(70.dp)
+                .padding(horizontal = 8.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             bottomNavItems.forEach { item ->
@@ -73,30 +76,38 @@ private fun BottomNavItemView(
         label = "iconScale"
     )
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = if (selected) OrangeLight.copy(alpha = 0.55f) else White,
         modifier = modifier
-            .selectable(
-                selected = selected,
-                onClick = onClick,
-                interactionSource = remember_ripple_free(),
-                indication = null
-            )
-            .padding(vertical = 8.dp)
+            .padding(horizontal = 2.dp)
     ) {
-        Icon(
-            imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
-            contentDescription = item.label,
-            tint = iconColor,
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .scale(iconScale)
-        )
-        Text(
-            text = item.label,
-            fontSize = 11.sp,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            color = iconColor
-        )
+                .selectable(
+                    selected = selected,
+                    onClick = onClick,
+                    interactionSource = remember_ripple_free(),
+                    indication = null
+                )
+                .padding(vertical = 7.dp)
+        ) {
+            Box {
+                Icon(
+                    imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
+                    contentDescription = item.label,
+                    tint = iconColor,
+                    modifier = Modifier.scale(iconScale)
+                )
+            }
+            Text(
+                text = item.label,
+                fontSize = 10.sp,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                color = iconColor
+            )
+        }
     }
 }
 

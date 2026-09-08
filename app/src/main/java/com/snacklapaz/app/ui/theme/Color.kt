@@ -5,12 +5,15 @@ import androidx.compose.ui.graphics.Color
 // ===== Laranja (cor oficial da marca, extraída do logo Snack La Paz) =====
 val OrangePrimary = Color(0xFFEF5707)      // laranja principal oficial (botões, destaques, splash)
 val OrangeDark = Color(0xFFC94706)         // laranja escuro (pressed, headers)
+val OrangeDeep = Color(0xFF8F2F03)         // contraste para fundos de marca
 val OrangeLight = Color(0xFFFFE0C7)        // laranja bem claro (fundos de chips/badges)
 val OrangeSoft = Color(0xFFFFF1E6)         // laranja quase branco (fundos suaves)
+val OrangeMist = Color(0xFFFFF5EE)         // fundo de superficies quentes
 
 // ===== Neutras =====
 val CreamBackground = Color(0xFFFFF8F3)    // fundo geral do app (creme)
 val White = Color(0xFFFFFFFF)
+val Ink = Color(0xFF24140C)                // texto principal com tom mais quente
 val GrayLight = Color(0xFFF2F2F2)          // fundo de cards/inputs
 val GrayMedium = Color(0xFFB0B0B0)         // textos secundários, placeholders
 val GrayDark = Color(0xFF4A4A4A)           // textos primários
