@@ -12,15 +12,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,22 +52,75 @@ fun AddressScreen(
     onBackClick: () -> Unit,
     onOrderConfirmed: (orderNumber: String, total: Double) -> Unit
 ) {
-    var fullName by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
-    var street by remember { mutableStateOf("") }
-    var number by remember { mutableStateOf("") }
-    var neighborhood by remember { mutableStateOf("") }
-    var complement by remember { mutableStateOf("") }
+    var fullName by remember { mutableStateOf(cartViewModel.draftAddress.fullName) }
+    var phone by remember { mutableStateOf(cartViewModel.draftAddress.phone) }
+    var street by remember { mutableStateOf(cartViewModel.draftAddress.street) }
+    var number by remember { mutableStateOf(cartViewModel.draftAddress.number) }
+    var neighborhood by remember { mutableStateOf(cartViewModel.draftAddress.neighborhood) }
+    var complement by remember { mutableStateOf(cartViewModel.draftAddress.complement) }
+    var showExitDialog by remember { mutableStateOf(false) }
 
     val isFormValid = fullName.isNotBlank() && phone.isNotBlank() &&
             street.isNotBlank() && number.isNotBlank() && neighborhood.isNotBlank()
+    val currentDraft = DeliveryAddress(fullName, phone, street, number, neighborhood, complement)
+    val hasTypedAddress = listOf(fullName, phone, street, number, neighborhood, complement)
+        .any { it.isNotBlank() }
+
+    fun leaveKeepingDraft() {
+        cartViewModel.updateDraftAddress(currentDraft)
+        onBackClick()
+    }
+
+    fun leaveDiscardingDraft() {
+        cartViewModel.clearDraftAddress()
+        onBackClick()
+    }
+
+    BackHandler {
+        if (hasTypedAddress) {
+            showExitDialog = true
+        } else {
+            onBackClick()
+        }
+    }
+
+    if (showExitDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitDialog = false },
+            title = { Text(text = "Salvar endereço preenchido?") },
+            text = {
+                Text(
+                    text = "Você pode voltar agora e continuar o pedido depois sem digitar tudo novamente."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { leaveKeepingDraft() }) {
+                    Text(text = "Salvar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { leaveDiscardingDraft() }) {
+                    Text(text = "Descartar")
+                }
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(CreamBackground)
     ) {
-        SnackTopBar(title = "Endereço de entrega", onBackClick = onBackClick)
+        SnackTopBar(
+            title = "Endereço de entrega",
+            onBackClick = {
+                if (hasTypedAddress) {
+                    showExitDialog = true
+                } else {
+                    onBackClick()
+                }
+            }
+        )
 
         Column(
             modifier = Modifier
@@ -74,7 +130,10 @@ fun AddressScreen(
         ) {
             SnackTextField(
                 value = fullName,
-                onValueChange = { fullName = it },
+                onValueChange = {
+                    fullName = it
+                    cartViewModel.updateDraftAddress(currentDraft.copy(fullName = it))
+                },
                 label = "Nome completo",
                 leadingIcon = Icons.Filled.Person
             )
@@ -82,7 +141,10 @@ fun AddressScreen(
 
             SnackTextField(
                 value = phone,
-                onValueChange = { phone = it },
+                onValueChange = {
+                    phone = it
+                    cartViewModel.updateDraftAddress(currentDraft.copy(phone = it))
+                },
                 label = "Telefone",
                 leadingIcon = Icons.Filled.Phone,
                 keyboardType = KeyboardType.Phone
@@ -91,7 +153,10 @@ fun AddressScreen(
 
             SnackTextField(
                 value = street,
-                onValueChange = { street = it },
+                onValueChange = {
+                    street = it
+                    cartViewModel.updateDraftAddress(currentDraft.copy(street = it))
+                },
                 label = "Rua / Avenida",
                 leadingIcon = Icons.Filled.LocationOn
             )
@@ -100,14 +165,20 @@ fun AddressScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SnackTextField(
                     value = number,
-                    onValueChange = { number = it },
+                    onValueChange = {
+                        number = it
+                        cartViewModel.updateDraftAddress(currentDraft.copy(number = it))
+                    },
                     label = "Número",
                     keyboardType = KeyboardType.Number,
                     modifier = Modifier.weight(1f)
                 )
                 SnackTextField(
                     value = neighborhood,
-                    onValueChange = { neighborhood = it },
+                    onValueChange = {
+                        neighborhood = it
+                        cartViewModel.updateDraftAddress(currentDraft.copy(neighborhood = it))
+                    },
                     label = "Bairro",
                     modifier = Modifier.weight(1f)
                 )
@@ -116,7 +187,10 @@ fun AddressScreen(
 
             SnackTextField(
                 value = complement,
-                onValueChange = { complement = it },
+                onValueChange = {
+                    complement = it
+                    cartViewModel.updateDraftAddress(currentDraft.copy(complement = it))
+                },
                 label = "Complemento (opcional)",
                 leadingIcon = Icons.Filled.Home
             )

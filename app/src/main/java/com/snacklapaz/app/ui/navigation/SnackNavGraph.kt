@@ -1,12 +1,25 @@
 package com.snacklapaz.app.ui.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -53,182 +66,248 @@ fun SnackNavGraph() {
 
     // Uma única instância, compartilhada entre Perfil, Login e Cadastro.
     val authViewModel: AuthViewModel = viewModel()
+    var pendingCheckoutAfterLogin by remember { mutableStateOf(false) }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .safeDrawingPadding()
     ) {
-        Box(modifier = Modifier.weight(1f)) {
-            NavHost(
-                navController = navController,
-                startDestination = Routes.HOME
-            ) {
-                composable(Routes.HOME) { HomeScreen(cartViewModel = cartViewModel) }
-                composable(Routes.SEARCH) { SearchScreen(cartViewModel = cartViewModel) }
-                composable(Routes.CART) {
-                    CartScreen(
-                        cartViewModel = cartViewModel,
-                        onGoToHomeClick = {
-                            navController.navigate(Routes.HOME) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.weight(1f)) {
+                NavHost(
+                    navController = navController,
+                    startDestination = Routes.HOME,
+                    enterTransition = { screenEnterTransition() },
+                    exitTransition = { screenExitTransition() },
+                    popEnterTransition = { screenPopEnterTransition() },
+                    popExitTransition = { screenPopExitTransition() }
+                ) {
+                    composable(Routes.HOME) { HomeScreen(cartViewModel = cartViewModel) }
+                    composable(Routes.SEARCH) { SearchScreen(cartViewModel = cartViewModel) }
+                    composable(Routes.CART) {
+                        CartScreen(
+                            cartViewModel = cartViewModel,
+                            isLoggedIn = authViewModel.isLoggedIn,
+                            onGoToHomeClick = {
+                                navController.navigate(Routes.HOME) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        onContinueClick = {
-                            navController.navigate(Routes.ADDRESS)
-                        }
-                    )
-                }
-                composable(Routes.ORDERS) {
-                    OrdersScreen(
-                        cartViewModel = cartViewModel,
-                        onTrackOrderClick = { navController.navigate(Routes.ORDER_TRACKING) }
-                    )
-                }
-                composable(Routes.PROFILE) {
-                    ProfileScreen(
-                        authViewModel = authViewModel,
-                        onLoginClick = { navController.navigate(Routes.LOGIN) },
-                        onSignUpClick = { navController.navigate(Routes.SIGNUP) },
-                        onAdminPanelClick = { navController.navigate(Routes.ADMIN_DASHBOARD) }
-                    )
-                }
-
-                composable(Routes.LOGIN) {
-                    LoginScreen(
-                        authViewModel = authViewModel,
-                        onLoginSuccess = { navController.popBackStack() },
-                        onGoToSignUp = {
-                            navController.navigate(Routes.SIGNUP) {
-                                popUpTo(Routes.LOGIN) { inclusive = true }
-                            }
-                        }
-                    )
-                }
-
-                composable(Routes.SIGNUP) {
-                    SignUpScreen(
-                        authViewModel = authViewModel,
-                        onBackClick = { navController.popBackStack() },
-                        onSignUpSuccess = {
-                            navController.navigate(Routes.PROFILE) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+                            },
+                            onContinueClick = {
+                                if (authViewModel.isLoggedIn) {
+                                    navController.navigate(Routes.ADDRESS)
+                                } else {
+                                    pendingCheckoutAfterLogin = true
+                                    navController.navigate(Routes.LOGIN)
                                 }
-                                launchSingleTop = true
-                            }
-                        }
-                    )
-                }
-
-                composable(Routes.ADMIN_DASHBOARD) {
-                    // Segunda camada de proteção: mesmo que alguém consiga
-                    // disparar a navegação pra essa rota sem passar pelo
-                    // botão do Perfil, a tela recusa a mostrar o conteúdo.
-                    if (authViewModel.isAdmin) {
-                        AdminDashboardScreen(
-                            onBackClick = { navController.popBackStack() },
-                            onSectionClick = { section ->
-                                navController.navigate(Routes.adminSectionRoute(section.id))
                             }
                         )
-                    } else {
-                        androidx.compose.runtime.LaunchedEffect(Unit) {
-                            navController.popBackStack()
+                    }
+                    composable(Routes.ORDERS) {
+                        OrdersScreen(
+                            cartViewModel = cartViewModel,
+                            onTrackOrderClick = { navController.navigate(Routes.ORDER_TRACKING) }
+                        )
+                    }
+                    composable(Routes.PROFILE) {
+                        ProfileScreen(
+                            authViewModel = authViewModel,
+                            onLoginClick = { navController.navigate(Routes.LOGIN) },
+                            onSignUpClick = { navController.navigate(Routes.SIGNUP) },
+                            onAdminPanelClick = { navController.navigate(Routes.ADMIN_DASHBOARD) }
+                        )
+                    }
+
+                    composable(Routes.LOGIN) {
+                        LoginScreen(
+                            authViewModel = authViewModel,
+                            onLoginSuccess = {
+                                if (pendingCheckoutAfterLogin) {
+                                    pendingCheckoutAfterLogin = false
+                                    navController.navigate(Routes.ADDRESS) {
+                                        popUpTo(Routes.LOGIN) { inclusive = true }
+                                    }
+                                } else {
+                                    navController.popBackStack()
+                                }
+                            },
+                            onGoToSignUp = {
+                                navController.navigate(Routes.SIGNUP) {
+                                    popUpTo(Routes.LOGIN) { inclusive = true }
+                                }
+                            }
+                        )
+                    }
+
+                    composable(Routes.SIGNUP) {
+                        SignUpScreen(
+                            authViewModel = authViewModel,
+                            onBackClick = { navController.popBackStack() },
+                            onSignUpSuccess = {
+                                if (pendingCheckoutAfterLogin) {
+                                    pendingCheckoutAfterLogin = false
+                                    navController.navigate(Routes.ADDRESS) {
+                                        popUpTo(Routes.SIGNUP) { inclusive = true }
+                                    }
+                                } else {
+                                    navController.navigate(Routes.PROFILE) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                    }
+                                }
+                            }
+                        )
+                    }
+
+                    composable(Routes.ADMIN_DASHBOARD) {
+                        // Segunda camada de proteção: mesmo que alguém consiga
+                        // disparar a navegação pra essa rota sem passar pelo
+                        // botão do Perfil, a tela recusa a mostrar o conteúdo.
+                        if (authViewModel.isAdmin) {
+                            AdminDashboardScreen(
+                                onBackClick = { navController.popBackStack() },
+                                onSectionClick = { section ->
+                                    navController.navigate(Routes.adminSectionRoute(section.id))
+                                }
+                            )
+                        } else {
+                            androidx.compose.runtime.LaunchedEffect(Unit) {
+                                navController.popBackStack()
+                            }
                         }
                     }
-                }
 
-                composable(
-                    route = Routes.ADMIN_SECTION,
-                    arguments = listOf(navArgument("sectionId") { type = NavType.StringType })
-                ) { backStackEntry ->
-                    val sectionId = backStackEntry.arguments?.getString("sectionId").orEmpty()
-                    val section = adminSections.find { it.id == sectionId }
+                    composable(
+                        route = Routes.ADMIN_SECTION,
+                        arguments = listOf(navArgument("sectionId") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val sectionId = backStackEntry.arguments?.getString("sectionId").orEmpty()
+                        val section = adminSections.find { it.id == sectionId }
 
-                    if (section != null) {
-                        AdminSectionScreen(
-                            title = section.title,
-                            icon = section.icon,
+                        if (section != null) {
+                            AdminSectionScreen(
+                                title = section.title,
+                                icon = section.icon,
+                                onBackClick = { navController.popBackStack() }
+                            )
+                        }
+                    }
+
+                    composable(Routes.ADDRESS) {
+                        AddressScreen(
+                            cartViewModel = cartViewModel,
+                            onBackClick = { navController.popBackStack() },
+                            onOrderConfirmed = { orderNumber, total ->
+                                navController.navigate(
+                                    Routes.orderConfirmationRoute(orderNumber, "%.2f".format(total))
+                                ) {
+                                    // Remove Endereço e Carrinho do histórico, pra "voltar"
+                                    // não levar de novo pro checkout de um pedido já feito.
+                                    popUpTo(Routes.CART) { inclusive = true }
+                                }
+                            }
+                        )
+                    }
+
+                    composable(
+                        route = Routes.ORDER_CONFIRMATION,
+                        arguments = listOf(
+                            navArgument("orderNumber") { type = NavType.StringType },
+                            navArgument("total") { type = NavType.StringType }
+                        )
+                    ) { backStackEntry ->
+                        val orderNumber = backStackEntry.arguments?.getString("orderNumber").orEmpty()
+                        val total = backStackEntry.arguments?.getString("total")?.toDoubleOrNull() ?: 0.0
+
+                        OrderConfirmationScreen(
+                            orderNumber = orderNumber,
+                            total = total,
+                            onViewReceiptClick = { navController.navigate(Routes.RECEIPT) },
+                            onTrackOrderClick = {
+                                navController.navigate(Routes.ORDER_TRACKING) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                }
+                            }
+                        )
+                    }
+
+                    composable(Routes.RECEIPT) {
+                        ReceiptScreen(
+                            order = cartViewModel.lastOrder,
+                            onBackClick = { navController.popBackStack() }
+                        )
+                    }
+
+                    composable(Routes.ORDER_TRACKING) {
+                        OrderTrackingScreen(
+                            order = cartViewModel.lastOrder,
                             onBackClick = { navController.popBackStack() }
                         )
                     }
                 }
+            }
 
-                composable(Routes.ADDRESS) {
-                    AddressScreen(
-                        cartViewModel = cartViewModel,
-                        onBackClick = { navController.popBackStack() },
-                        onOrderConfirmed = { orderNumber, total ->
-                            navController.navigate(
-                                Routes.orderConfirmationRoute(orderNumber, "%.2f".format(total))
-                            ) {
-                                // Remove Endereço e Carrinho do histórico, pra "voltar"
-                                // não levar de novo pro checkout de um pedido já feito.
-                                popUpTo(Routes.CART) { inclusive = true }
+            if (currentRoute in mainTabRoutes) {
+                SnackBottomBar(
+                    currentRoute = currentRoute,
+                    onItemClick = { route ->
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
                             }
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                    )
-                }
-
-                composable(
-                    route = Routes.ORDER_CONFIRMATION,
-                    arguments = listOf(
-                        navArgument("orderNumber") { type = NavType.StringType },
-                        navArgument("total") { type = NavType.StringType }
-                    )
-                ) { backStackEntry ->
-                    val orderNumber = backStackEntry.arguments?.getString("orderNumber").orEmpty()
-                    val total = backStackEntry.arguments?.getString("total")?.toDoubleOrNull() ?: 0.0
-
-                    OrderConfirmationScreen(
-                        orderNumber = orderNumber,
-                        total = total,
-                        onViewReceiptClick = { navController.navigate(Routes.RECEIPT) },
-                        onTrackOrderClick = {
-                            navController.navigate(Routes.ORDER_TRACKING) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                            }
-                        }
-                    )
-                }
-
-                composable(Routes.RECEIPT) {
-                    ReceiptScreen(
-                        order = cartViewModel.lastOrder,
-                        onBackClick = { navController.popBackStack() }
-                    )
-                }
-
-                composable(Routes.ORDER_TRACKING) {
-                    OrderTrackingScreen(
-                        order = cartViewModel.lastOrder,
-                        onBackClick = { navController.popBackStack() }
-                    )
-                }
+                    }
+                )
             }
         }
 
-        if (currentRoute in mainTabRoutes) {
-            SnackBottomBar(
-                currentRoute = currentRoute,
-                onItemClick = { route ->
-                    navController.navigate(route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                }
-            )
-        }
+        CartAddFeedback(
+            animationKey = cartViewModel.addToCartAnimationKey,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
+}
+
+private fun screenEnterTransition(): EnterTransition {
+    return fadeIn(animationSpec = tween(180)) +
+            slideInHorizontally(
+                initialOffsetX = { it / 12 },
+                animationSpec = tween(220)
+            )
+}
+
+private fun screenExitTransition(): ExitTransition {
+    return fadeOut(animationSpec = tween(140)) +
+            slideOutHorizontally(
+                targetOffsetX = { -it / 18 },
+                animationSpec = tween(180)
+            )
+}
+
+private fun screenPopEnterTransition(): EnterTransition {
+    return fadeIn(animationSpec = tween(160)) +
+            slideInVertically(
+                initialOffsetY = { -it / 24 },
+                animationSpec = tween(200)
+            )
+}
+
+private fun screenPopExitTransition(): ExitTransition {
+    return fadeOut(animationSpec = tween(140)) +
+            slideOutVertically(
+                targetOffsetY = { it / 24 },
+                animationSpec = tween(180)
+            )
 }

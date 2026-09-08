@@ -22,6 +22,12 @@ class CartViewModel : ViewModel() {
     var items by mutableStateOf<List<CartItem>>(emptyList())
         private set
 
+    var draftAddress by mutableStateOf(DeliveryAddress())
+        private set
+
+    var addToCartAnimationKey by mutableStateOf(0)
+        private set
+
     // Taxa de entrega fixa por enquanto; futuramente pode vir calculada
     // a partir do endereço do usuário.
     private val flatDeliveryFee = 5.0
@@ -53,6 +59,15 @@ class CartViewModel : ViewModel() {
                 quantity = 1
             )
         }
+        addToCartAnimationKey += 1
+    }
+
+    fun updateDraftAddress(address: DeliveryAddress) {
+        draftAddress = address
+    }
+
+    fun clearDraftAddress() {
+        draftAddress = DeliveryAddress()
     }
 
     fun increaseQuantity(productId: String) {
@@ -98,6 +113,7 @@ class CartViewModel : ViewModel() {
             dateTimeMillis = System.currentTimeMillis()
         )
         clearCart()
+        clearDraftAddress()
         return orderNumber
     }
 }

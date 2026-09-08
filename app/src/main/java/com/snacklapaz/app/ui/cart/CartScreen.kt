@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.Icon
@@ -33,9 +34,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import com.snacklapaz.app.ui.cart.model.CartItem
 import com.snacklapaz.app.ui.components.EmptyState
+import com.snacklapaz.app.ui.components.SnackAsyncImage
 import com.snacklapaz.app.ui.components.SnackPrimaryButton
 import com.snacklapaz.app.ui.theme.CreamBackground
 import com.snacklapaz.app.ui.theme.ErrorRed
@@ -49,6 +50,7 @@ import com.snacklapaz.app.ui.theme.White
 @Composable
 fun CartScreen(
     cartViewModel: CartViewModel,
+    isLoggedIn: Boolean,
     onGoToHomeClick: () -> Unit = {},
     onContinueClick: () -> Unit = {}
 ) {
@@ -97,6 +99,7 @@ fun CartScreen(
             deliveryFee = cartViewModel.deliveryFee,
             discount = cartViewModel.discount,
             total = cartViewModel.total,
+            isLoggedIn = isLoggedIn,
             onContinueClick = onContinueClick
         )
     }
@@ -119,7 +122,7 @@ private fun CartItemRow(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AsyncImage(
+            SnackAsyncImage(
                 model = item.imageUrl,
                 contentDescription = item.name,
                 modifier = Modifier
@@ -214,6 +217,7 @@ private fun CartSummary(
     deliveryFee: Double,
     discount: Double,
     total: Double,
+    isLoggedIn: Boolean,
     onContinueClick: () -> Unit
 ) {
     Surface(
@@ -247,8 +251,28 @@ private fun CartSummary(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            if (!isLoggedIn) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Lock,
+                        contentDescription = null,
+                        tint = OrangePrimary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "Entre na conta para continuar de onde parou.",
+                        color = GrayMedium,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+            }
+
             SnackPrimaryButton(
-                text = "Continuar pedido",
+                text = if (isLoggedIn) "Continuar pedido" else "Entrar para continuar",
                 onClick = onContinueClick
             )
         }

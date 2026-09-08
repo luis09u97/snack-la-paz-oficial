@@ -1,12 +1,12 @@
 package com.snacklapaz.app.ui.cart.model
 
 data class DeliveryAddress(
-    val fullName: String,
-    val phone: String,
-    val street: String,
-    val number: String,
-    val neighborhood: String,
-    val complement: String
+    val fullName: String = "",
+    val phone: String = "",
+    val street: String = "",
+    val number: String = "",
+    val neighborhood: String = "",
+    val complement: String = ""
 ) {
     fun formatted(): String {
         val base = "$street, $number - $neighborhood"
