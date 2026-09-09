@@ -62,13 +62,15 @@ fun ProductCard(
     onFavoriteClick: () -> Unit,
     onAddToCartClick: () -> Unit,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    borderColor: Color = GrayBorder.copy(alpha = 0.65f),
+    borderWidth: androidx.compose.ui.unit.Dp = 1.dp
 ) {
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = White,
         shadowElevation = 1.dp,
-        border = BorderStroke(1.dp, GrayBorder.copy(alpha = 0.65f)),
+        border = BorderStroke(borderWidth, borderColor),
         modifier = modifier
             .clickable(onClick = onClick)
     ) {
