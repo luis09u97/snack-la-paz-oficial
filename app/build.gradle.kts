@@ -102,6 +102,7 @@ dependencies {
 
     // ===== Carregamento de imagens (fotos de produtos do Supabase Storage) =====
     implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("io.coil-kt:coil-svg:2.7.0")
 
     // ===== Supabase (BOM controla a versao de todos os modulos juntos) =====
     implementation(platform("io.github.jan-tennert.supabase:bom:3.2.5"))

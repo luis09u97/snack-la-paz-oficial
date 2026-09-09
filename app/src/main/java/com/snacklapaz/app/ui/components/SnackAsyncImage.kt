@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import coil.decode.SvgDecoder
 import coil.request.CachePolicy
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
@@ -24,11 +25,18 @@ fun SnackAsyncImage(
     model: String?,
     contentDescription: String?,
     modifier: Modifier = Modifier,
-    contentScale: ContentScale = ContentScale.Crop
+    contentScale: ContentScale = ContentScale.Crop,
+    showBackground: Boolean = true
 ) {
+    val imageModifier = if (showBackground) {
+        modifier.background(OrangeLight.copy(alpha = 0.26f))
+    } else {
+        modifier
+    }
+
     Box(
         contentAlignment = Alignment.Center,
-        modifier = modifier.background(OrangeLight.copy(alpha = 0.26f))
+        modifier = imageModifier
     ) {
         if (model.isNullOrBlank()) {
             ImagePlaceholder(contentDescription = contentDescription)
@@ -36,6 +44,7 @@ fun SnackAsyncImage(
             SubcomposeAsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(model)
+                    .decoderFactory(SvgDecoder.Factory())
                     .crossfade(true)
                     .memoryCachePolicy(CachePolicy.ENABLED)
                     .diskCachePolicy(CachePolicy.ENABLED)
