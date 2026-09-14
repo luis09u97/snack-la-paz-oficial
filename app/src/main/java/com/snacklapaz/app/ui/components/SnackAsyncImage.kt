@@ -8,11 +8,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import coil.decode.SvgDecoder
 import coil.request.CachePolicy
 import coil.compose.SubcomposeAsyncImage
@@ -26,8 +31,16 @@ fun SnackAsyncImage(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
-    showBackground: Boolean = true
+    showBackground: Boolean = true,
+    fallbackModels: List<String> = emptyList()
 ) {
+    val imageModels = remember(model, fallbackModels) {
+        (listOfNotNull(model?.takeIf { it.isNotBlank() }) + fallbackModels)
+            .filter { it.isNotBlank() }
+            .distinct()
+    }
+    var currentModelIndex by remember(imageModels) { mutableIntStateOf(0) }
+
     val imageModifier = if (showBackground) {
         modifier.background(OrangeLight.copy(alpha = 0.26f))
     } else {
@@ -38,12 +51,12 @@ fun SnackAsyncImage(
         contentAlignment = Alignment.Center,
         modifier = imageModifier
     ) {
-        if (model.isNullOrBlank()) {
+        if (imageModels.isEmpty()) {
             ImagePlaceholder(contentDescription = contentDescription)
         } else {
             SubcomposeAsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data(model)
+                    .data(imageModels[currentModelIndex])
                     .decoderFactory(SvgDecoder.Factory())
                     .crossfade(true)
                     .memoryCachePolicy(CachePolicy.ENABLED)
@@ -53,7 +66,14 @@ fun SnackAsyncImage(
                 contentDescription = contentDescription,
                 contentScale = contentScale,
                 loading = { ImagePlaceholder(contentDescription = contentDescription) },
-                error = { ImagePlaceholder(contentDescription = contentDescription) },
+                error = {
+                    if (currentModelIndex < imageModels.lastIndex) {
+                        LaunchedEffect(imageModels[currentModelIndex]) {
+                            currentModelIndex += 1
+                        }
+                    }
+                    ImagePlaceholder(contentDescription = contentDescription)
+                },
                 modifier = Modifier.fillMaxSize()
             )
         }

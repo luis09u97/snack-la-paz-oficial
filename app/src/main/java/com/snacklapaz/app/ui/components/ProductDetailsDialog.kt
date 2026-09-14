@@ -377,6 +377,9 @@ private fun ProductHero(
     onShareClick: () -> Unit
 ) {
     val pagerState = rememberPagerState(pageCount = { images.size })
+    val fallbackImages = (listOf(product.imageUrl) + images)
+        .filter { it.isNotBlank() }
+        .distinct()
 
     Box {
         HorizontalPager(
@@ -393,6 +396,7 @@ private fun ProductHero(
                 model = images[page],
                 contentDescription = "${product.name} imagem ${page + 1}",
                 contentScale = ContentScale.Crop,
+                fallbackModels = fallbackImages.filterNot { it == images[page] },
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
