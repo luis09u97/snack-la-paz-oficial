@@ -37,13 +37,19 @@ import com.snacklapaz.app.ui.auth.SignUpScreen
 import com.snacklapaz.app.ui.cart.CartScreen
 import com.snacklapaz.app.ui.cart.CartViewModel
 import com.snacklapaz.app.ui.checkout.AddressScreen
+import com.snacklapaz.app.ui.checkout.CashPaymentScreen
 import com.snacklapaz.app.ui.checkout.OrderConfirmationScreen
+import com.snacklapaz.app.ui.checkout.PaymentScreen
+import com.snacklapaz.app.ui.checkout.PixPaymentScreen
 import com.snacklapaz.app.ui.home.HomeScreen
 import com.snacklapaz.app.ui.orders.OrdersScreen
+import com.snacklapaz.app.ui.orders.OrdersViewModel
 import com.snacklapaz.app.ui.orders.OrderTrackingScreen
+import com.snacklapaz.app.ui.profile.ProfileDetailScreen
 import com.snacklapaz.app.ui.profile.ProfileScreen
 import com.snacklapaz.app.ui.receipt.ReceiptScreen
 import com.snacklapaz.app.ui.search.SearchScreen
+import java.util.Locale
 
 // Rotas que fazem parte das 5 abas principais (mostram a bottom bar).
 // Fora delas (endereço, confirmação, etc.) a barra fica escondida.
@@ -66,6 +72,7 @@ fun SnackNavGraph() {
 
     // Uma única instância, compartilhada entre Perfil, Login e Cadastro.
     val authViewModel: AuthViewModel = viewModel()
+    val ordersViewModel: OrdersViewModel = viewModel()
     var pendingCheckoutAfterLogin by remember { mutableStateOf(false) }
 
     Box(
@@ -110,16 +117,48 @@ fun SnackNavGraph() {
                     }
                     composable(Routes.ORDERS) {
                         OrdersScreen(
-                            cartViewModel = cartViewModel,
-                            onTrackOrderClick = { navController.navigate(Routes.ORDER_TRACKING) }
+                            ordersViewModel = ordersViewModel,
+                            isLoggedIn = authViewModel.isLoggedIn,
+                            onLoginClick = { navController.navigate(Routes.LOGIN) },
+                            onTrackOrderClick = { order ->
+                                ordersViewModel.selectOrder(order)
+                                navController.navigate(Routes.ORDER_TRACKING)
+                            }
                         )
                     }
                     composable(Routes.PROFILE) {
                         ProfileScreen(
                             authViewModel = authViewModel,
+                            cartViewModel = cartViewModel,
+                            ordersViewModel = ordersViewModel,
                             onLoginClick = { navController.navigate(Routes.LOGIN) },
                             onSignUpClick = { navController.navigate(Routes.SIGNUP) },
-                            onAdminPanelClick = { navController.navigate(Routes.ADMIN_DASHBOARD) }
+                            onAdminPanelClick = { navController.navigate(Routes.ADMIN_DASHBOARD) },
+                            onOrdersClick = { navController.navigate(Routes.ORDERS) },
+                            onAddressClick = { navController.navigate(Routes.ADDRESS) },
+                            onPaymentClick = { navController.navigate(Routes.PAYMENT) },
+                            onCartClick = { navController.navigate(Routes.CART) },
+                            onProfileDetailClick = { sectionId ->
+                                navController.navigate(Routes.profileDetailRoute(sectionId))
+                            }
+                        )
+                    }
+
+                    composable(
+                        route = Routes.PROFILE_DETAIL,
+                        arguments = listOf(navArgument("sectionId") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val sectionId = backStackEntry.arguments?.getString("sectionId").orEmpty()
+                        ProfileDetailScreen(
+                            sectionId = sectionId,
+                            authViewModel = authViewModel,
+                            cartViewModel = cartViewModel,
+                            ordersViewModel = ordersViewModel,
+                            onBackClick = { navController.popBackStack() },
+                            onOrdersClick = { navController.navigate(Routes.ORDERS) },
+                            onAddressClick = { navController.navigate(Routes.ADDRESS) },
+                            onPaymentClick = { navController.navigate(Routes.PAYMENT) },
+                            onCartClick = { navController.navigate(Routes.CART) }
                         )
                     }
 
@@ -193,6 +232,7 @@ fun SnackNavGraph() {
 
                         if (section != null) {
                             AdminSectionScreen(
+                                sectionId = section.id,
                                 title = section.title,
                                 icon = section.icon,
                                 onBackClick = { navController.popBackStack() }
@@ -204,12 +244,59 @@ fun SnackNavGraph() {
                         AddressScreen(
                             cartViewModel = cartViewModel,
                             onBackClick = { navController.popBackStack() },
+                            onContinueToPayment = { navController.navigate(Routes.PAYMENT) }
+                        )
+                    }
+
+                    composable(Routes.PAYMENT) {
+                        PaymentScreen(
+                            cartViewModel = cartViewModel,
+                            onBackClick = { navController.popBackStack() },
+                            onPixClick = { navController.navigate(Routes.PIX_PAYMENT) },
+                            onCashClick = { navController.navigate(Routes.CASH_PAYMENT) },
                             onOrderConfirmed = { orderNumber, total ->
                                 navController.navigate(
-                                    Routes.orderConfirmationRoute(orderNumber, "%.2f".format(total))
+                                    Routes.orderConfirmationRoute(
+                                        orderNumber,
+                                        String.format(Locale.US, "%.2f", total)
+                                    )
                                 ) {
-                                    // Remove Endereço e Carrinho do histórico, pra "voltar"
+                                    // Remove pagamento, endereço e carrinho do histórico, pra "voltar"
                                     // não levar de novo pro checkout de um pedido já feito.
+                                    popUpTo(Routes.CART) { inclusive = true }
+                                }
+                            }
+                        )
+                    }
+
+                    composable(Routes.PIX_PAYMENT) {
+                        PixPaymentScreen(
+                            cartViewModel = cartViewModel,
+                            onBackClick = { navController.popBackStack() },
+                            onOrderConfirmed = { orderNumber, total ->
+                                navController.navigate(
+                                    Routes.orderConfirmationRoute(
+                                        orderNumber,
+                                        String.format(Locale.US, "%.2f", total)
+                                    )
+                                ) {
+                                    popUpTo(Routes.CART) { inclusive = true }
+                                }
+                            }
+                        )
+                    }
+
+                    composable(Routes.CASH_PAYMENT) {
+                        CashPaymentScreen(
+                            cartViewModel = cartViewModel,
+                            onBackClick = { navController.popBackStack() },
+                            onOrderConfirmed = { orderNumber, total ->
+                                navController.navigate(
+                                    Routes.orderConfirmationRoute(
+                                        orderNumber,
+                                        String.format(Locale.US, "%.2f", total)
+                                    )
+                                ) {
                                     popUpTo(Routes.CART) { inclusive = true }
                                 }
                             }
@@ -250,7 +337,7 @@ fun SnackNavGraph() {
 
                     composable(Routes.ORDER_TRACKING) {
                         OrderTrackingScreen(
-                            order = cartViewModel.lastOrder,
+                            order = ordersViewModel.selectedOrder ?: cartViewModel.lastOrder,
                             onBackClick = { navController.popBackStack() }
                         )
                     }

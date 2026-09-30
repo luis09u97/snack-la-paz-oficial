@@ -116,6 +116,9 @@ dependencies {
     // ===== Serializacao (JSON <-> objetos Kotlin) =====
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
+    // ===== QR Code para Pix copia e cola =====
+    implementation("com.google.zxing:core:3.5.3")
+
     // ===== Necessario por causa do minSdk 24 (Supabase 3.x exige 26+) =====
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

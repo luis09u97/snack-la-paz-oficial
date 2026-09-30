@@ -10,8 +10,12 @@ object Routes {
     const val CART = "cart"
     const val ORDERS = "orders"
     const val PROFILE = "profile"
+    const val PROFILE_DETAIL = "profile_detail/{sectionId}"
 
     const val ADDRESS = "address"
+    const val PAYMENT = "payment"
+    const val PIX_PAYMENT = "pix_payment"
+    const val CASH_PAYMENT = "cash_payment"
     const val ORDER_CONFIRMATION = "order_confirmation/{orderNumber}/{total}"
     const val RECEIPT = "receipt"
     const val ORDER_TRACKING = "order_tracking"
@@ -19,6 +23,8 @@ object Routes {
     const val SIGNUP = "signup"
     const val ADMIN_DASHBOARD = "admin_dashboard"
     const val ADMIN_SECTION = "admin_section/{sectionId}"
+
+    fun profileDetailRoute(sectionId: String) = "profile_detail/$sectionId"
 
     fun adminSectionRoute(sectionId: String) = "admin_section/$sectionId"
 
