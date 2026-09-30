@@ -286,6 +286,21 @@ to authenticated
 using (public.current_user_is_admin())
 with check (public.current_user_is_admin());
 
+drop policy if exists "Admin gerencia categorias" on categorias;
+create policy "Admin gerencia categorias"
+on categorias
+for all
+to authenticated
+using (public.current_user_is_admin())
+with check (public.current_user_is_admin());
+
+drop policy if exists "Admin ve itens dos pedidos" on itens_pedido;
+create policy "Admin ve itens dos pedidos"
+on itens_pedido
+for select
+to authenticated
+using (public.current_user_is_admin());
+
 drop policy if exists "Admin gerencia pedidos" on pedidos;
 create policy "Admin gerencia pedidos"
 on pedidos
@@ -304,7 +319,7 @@ with check (public.current_user_is_admin());
 
 grant usage on schema public to anon, authenticated;
 grant select on categorias, produtos to anon, authenticated;
-grant select, insert, update on clientes, enderecos, pedidos, itens_pedido, pagamentos, produtos to authenticated;
+grant select, insert, update on clientes, enderecos, pedidos, itens_pedido, pagamentos, produtos, categorias to authenticated;
 grant usage, select on all sequences in schema public to authenticated;
 grant execute on function public.current_user_is_admin() to authenticated;
 
