@@ -1,5 +1,6 @@
 package com.snacklapaz.app.ui.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,7 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -59,7 +60,6 @@ import com.snacklapaz.app.ui.theme.CreamBackground
 import com.snacklapaz.app.ui.theme.GrayDark
 import com.snacklapaz.app.ui.theme.GrayMedium
 import com.snacklapaz.app.ui.theme.OrangeLight
-import com.snacklapaz.app.ui.theme.OrangeDeep
 import com.snacklapaz.app.ui.theme.OrangePrimary
 import com.snacklapaz.app.ui.theme.OrangeSoft
 import com.snacklapaz.app.ui.theme.White
@@ -166,7 +166,7 @@ private fun HomeContent(
         item { HomeHeader() }
 
         item {
-            Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+            Box(modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
                 SnackTextField(
                     value = searchText,
                     onValueChange = onSearchChange,
@@ -252,63 +252,54 @@ private fun selectedCategoryTitle(categories: List<Category>, selectedCategoryId
 
 @Composable
 private fun HomeHeader() {
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                Brush.horizontalGradient(
-                    colors = listOf(OrangeDeep, OrangePrimary)
-                )
-            )
-            .padding(horizontal = 18.dp, vertical = 18.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .height(136.dp)
+            .background(OrangePrimary)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Surface(
-                shape = CircleShape,
-                color = White.copy(alpha = 0.16f),
-                modifier = Modifier.size(54.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Image(
-                        painter = painterResource(id = R.drawable.logo_icon),
-                        contentDescription = "Snack La Paz",
-                        modifier = Modifier.size(42.dp)
-                    )
-                }
-            }
-
-            Column(modifier = Modifier.padding(start = 12.dp)) {
-                Text(
-                    text = "Snack La Paz",
-                    color = White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1
-                )
-                Text(
-                    text = "Comidas e bebidas bolivianas",
-                    color = White.copy(alpha = 0.88f),
-                    fontSize = 13.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-
         Surface(
             shape = CircleShape,
-            color = White.copy(alpha = 0.2f),
-            modifier = Modifier.size(44.dp)
+            color = White.copy(alpha = 0.18f),
+            border = BorderStroke(1.dp, White.copy(alpha = 0.18f)),
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 20.dp, end = 18.dp)
+                .size(52.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = Icons.Filled.Notifications,
                     contentDescription = "Notificações",
-                    tint = White
+                    tint = White,
+                    modifier = Modifier.size(27.dp)
                 )
             }
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .fillMaxWidth()
+                .padding(horizontal = 82.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.logo_full),
+                contentDescription = "Snack La Paz",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(76.dp)
+            )
+            Text(
+                text = "Comidas e bebidas bolivianas",
+                color = White.copy(alpha = 0.94f),
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
@@ -319,51 +310,104 @@ private fun PromoBanner() {
         shape = RoundedCornerShape(16.dp),
         color = White,
         shadowElevation = 2.dp,
+        border = BorderStroke(1.dp, OrangeLight.copy(alpha = 0.9f)),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp)
-            .height(128.dp)
+            .padding(horizontal = 18.dp, vertical = 8.dp)
+            .height(154.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
-                    .size(138.dp)
+                    .size(142.dp)
                     .clip(CircleShape)
                     .background(OrangeSoft)
             )
-            Column {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+            Surface(
+                shape = CircleShape,
+                color = OrangePrimary,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 34.dp)
+                    .size(74.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Filled.DeliveryDining,
+                        contentDescription = null,
+                        tint = White,
+                        modifier = Modifier.size(39.dp)
+                    )
+                }
+            }
+            Column(modifier = Modifier.padding(20.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = RoundedCornerShape(999.dp),
+                        color = OrangeLight,
+                        border = BorderStroke(1.dp, OrangePrimary.copy(alpha = 0.18f))
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.DeliveryDining,
+                                contentDescription = null,
+                                tint = OrangePrimary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = "Entrega rápida",
+                                color = OrangePrimary,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                modifier = Modifier.padding(start = 6.dp)
+                            )
+                        }
+                    }
+                }
+                Text(
+                    text = "Peça hoje sem sair de casa",
+                    color = GrayDark,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                    lineHeight = 24.sp,
+                    modifier = Modifier.padding(top = 12.dp)
+                )
+                Text(
+                    text = "Salteñas, broaster, mocochinche e doces bolivianos preparados pelo Snack La Paz.",
+                    color = GrayDark,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                    modifier = Modifier
+                        .fillMaxWidth(0.68f)
+                        .padding(top = 6.dp)
+                )
+                Surface(
+                    shape = RoundedCornerShape(999.dp),
+                    color = CreamBackground,
+                    modifier = Modifier.padding(top = 10.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.Filled.DeliveryDining,
                             contentDescription = null,
                             tint = OrangePrimary,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(15.dp)
                         )
                         Text(
-                            text = "Entrega rápida",
-                            color = OrangePrimary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            modifier = Modifier.padding(start = 8.dp)
+                            text = "Cardápio preparado para hoje",
+                            color = GrayMedium,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(start = 5.dp)
                         )
                     }
-                    Text(
-                        text = "Peça salteñas, broaster, mocochinche e doces bolivianos sem sair de casa.",
-                        color = GrayDark,
-                        fontSize = 13.sp,
-                        lineHeight = 18.sp,
-                        modifier = Modifier
-                            .fillMaxWidth(0.78f)
-                            .padding(top = 8.dp)
-                    )
-                    Text(
-                        text = "Cardápio preparado para hoje",
-                        color = GrayMedium,
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
                 }
             }
         }
