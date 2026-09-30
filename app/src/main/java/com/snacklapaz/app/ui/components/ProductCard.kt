@@ -58,6 +58,7 @@ fun ProductCard(
     name: String,
     price: String,
     rating: Float,
+    reviewCount: Int = 0,
     isFavorite: Boolean,
     onFavoriteClick: () -> Unit,
     onAddToCartClick: () -> Unit,
@@ -127,11 +128,20 @@ fun ProductCard(
                                 modifier = Modifier.size(13.dp)
                             )
                             Text(
-                                text = " $rating",
+                                text = " ${"%.1f".format(rating)}",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = GrayDark
                             )
                         }
+                    }
+                    if (reviewCount > 0) {
+                        Text(
+                            text = "  $reviewCount avaliações",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = GrayMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
 

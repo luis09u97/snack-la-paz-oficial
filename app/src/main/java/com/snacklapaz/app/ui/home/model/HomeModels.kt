@@ -22,6 +22,8 @@ data class Product(
     val categoryId: String,
     val description: String,
     val ingredients: String,
+    val reviewCount: Int = 0,
+    val feedbackHighlight: String = "",
     var isFavorite: Boolean = false
 )
 

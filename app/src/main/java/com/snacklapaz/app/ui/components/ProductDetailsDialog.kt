@@ -3,6 +3,7 @@ package com.snacklapaz.app.ui.components
 import android.content.Intent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,14 +31,23 @@ import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -50,6 +60,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.snacklapaz.app.data.ProductRepository
 import com.snacklapaz.app.ui.home.model.Product
 import com.snacklapaz.app.ui.home.model.galleryImages
 import com.snacklapaz.app.ui.theme.CreamBackground
@@ -59,6 +70,7 @@ import com.snacklapaz.app.ui.theme.GrayMedium
 import com.snacklapaz.app.ui.theme.OrangeLight
 import com.snacklapaz.app.ui.theme.OrangePrimary
 import com.snacklapaz.app.ui.theme.White
+import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 
 @Composable
@@ -73,7 +85,15 @@ fun ProductDetailsDialog(
 ) {
     val context = LocalContext.current
     val images = product.galleryImages()
+    var showFeedbackDialog by remember { mutableStateOf(false) }
     SnackImagePreloader(models = images + suggestions.map { it.imageUrl })
+
+    if (showFeedbackDialog) {
+        ProductFeedbackDialog(
+            product = product,
+            onDismiss = { showFeedbackDialog = false }
+        )
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -116,7 +136,7 @@ fun ProductDetailsDialog(
                             modifier = Modifier.size(18.dp)
                         )
                         Text(
-                            text = " ${product.rating}  •  Produto boliviano",
+                            text = " ${"%.1f".format(product.rating)}  •  ${product.reviewCount} avaliações  •  Produto boliviano",
                             style = MaterialTheme.typography.bodyMedium,
                             color = GrayMedium
                         )
@@ -132,6 +152,10 @@ fun ProductDetailsDialog(
 
                     PaymentMethods()
                     DeliveryInfo()
+                    ProductReviewSummary(
+                        product = product,
+                        onFeedbackClick = { showFeedbackDialog = true }
+                    )
 
                     HorizontalDivider(color = GrayLight, modifier = Modifier.padding(vertical = 18.dp))
 
@@ -174,6 +198,151 @@ fun ProductDetailsDialog(
             }
         }
     }
+}
+
+@Composable
+private fun ProductReviewSummary(
+    product: Product,
+    onFeedbackClick: () -> Unit
+) {
+    Surface(
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+        color = White,
+        border = BorderStroke(1.dp, OrangePrimary.copy(alpha = 0.18f)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 18.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(shape = CircleShape, color = OrangeLight.copy(alpha = 0.7f), modifier = Modifier.size(42.dp)) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = null,
+                            tint = OrangePrimary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+                Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
+                    Text(
+                        text = "${"%.1f".format(product.rating)} de 5",
+                        color = GrayDark,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${product.reviewCount} avaliações de clientes",
+                        color = GrayMedium,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+
+            if (product.feedbackHighlight.isNotBlank()) {
+                Text(
+                    text = product.feedbackHighlight,
+                    color = GrayDark,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 12.dp)
+                )
+            }
+
+            Button(
+                onClick = onFeedbackClick,
+                colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 14.dp)
+                    .height(46.dp)
+            ) {
+                Text("Avaliar produto", fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProductFeedbackDialog(
+    product: Product,
+    onDismiss: () -> Unit
+) {
+    val repository = remember { ProductRepository() }
+    val scope = rememberCoroutineScope()
+    var rating by remember { mutableStateOf(5) }
+    var comment by remember { mutableStateOf("") }
+    var isSending by remember { mutableStateOf(false) }
+    var message by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Avaliar ${product.name}") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Sua opinião ajuda outros clientes a escolher melhor.",
+                    color = GrayMedium,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    repeat(5) { index ->
+                        val star = index + 1
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = "$star estrelas",
+                            tint = if (star <= rating) OrangePrimary else GrayLight,
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clickable { rating = star }
+                        )
+                    }
+                }
+                OutlinedTextField(
+                    value = comment,
+                    onValueChange = { comment = it },
+                    label = { Text("Comentário opcional") },
+                    minLines = 3,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                message?.let {
+                    Text(text = it, color = OrangePrimary, fontWeight = FontWeight.Bold)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = !isSending,
+                onClick = {
+                    isSending = true
+                    message = null
+                    scope.launch {
+                        runCatching {
+                            repository.submitFeedback(
+                                productId = product.id.toInt(),
+                                rating = rating,
+                                comment = comment.trim()
+                            )
+                        }.onSuccess {
+                            message = "Obrigado pelo feedback!"
+                            isSending = false
+                        }.onFailure {
+                            message = "Não foi possível salvar agora. Tente novamente."
+                            isSending = false
+                        }
+                    }
+                }
+            ) {
+                Text(if (isSending) "Enviando..." else "Enviar", color = OrangePrimary)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Fechar")
+            }
+        }
+    )
 }
 
 @Composable
@@ -345,6 +514,7 @@ private fun SuggestionGrid(
                         name = suggestion.name,
                         price = "Bs ${"%.2f".format(suggestion.price)}",
                         rating = suggestion.rating,
+                        reviewCount = suggestion.reviewCount,
                         isFavorite = suggestion.isFavorite,
                         onFavoriteClick = { },
                         onAddToCartClick = { onSuggestionAddClick(suggestion) },

@@ -150,6 +150,7 @@ fun SearchScreen(
                             name = product.name,
                             price = "Bs ${"%.2f".format(product.price)}",
                             rating = product.rating,
+                            reviewCount = product.reviewCount,
                             isFavorite = product.isFavorite,
                             onFavoriteClick = { searchViewModel.toggleFavorite(product.id) },
                             onAddToCartClick = { cartViewModel.addToCart(product) },

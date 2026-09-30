@@ -29,6 +29,9 @@ data class ProdutoDto(
     val imagem: String? = null,
     val ingredientes: String? = null,
     val status: String? = null,
+    @SerialName("avaliacao_media") val avaliacaoMedia: Double? = null,
+    @SerialName("total_avaliacoes") val totalAvaliacoes: Int? = null,
+    @SerialName("feedback_destaque") val feedbackDestaque: String? = null,
     @SerialName("data_cadastro") val dataCadastro: String? = null
 )
 

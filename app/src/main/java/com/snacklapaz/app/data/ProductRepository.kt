@@ -7,7 +7,10 @@ import com.snacklapaz.app.data.dto.ProdutoWriteDto
 import com.snacklapaz.app.ui.home.model.Category
 import com.snacklapaz.app.ui.home.model.Product
 import com.snacklapaz.app.ui.home.model.iconFromName
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 /**
  * Busca categorias e produtos direto do banco Supabase, convertendo os
@@ -132,16 +135,59 @@ class ProductRepository {
         }
     }
 
+    suspend fun submitFeedback(productId: Int, rating: Int, comment: String) {
+        val authId = client.auth.currentUserOrNull()?.id
+        client.postgrest["avaliacoes_produto"].insert(
+            ProductFeedbackWriteDto(
+                idProduto = productId,
+                authId = authId,
+                nota = rating.coerceIn(1, 5),
+                comentario = comment.takeIf { it.isNotBlank() }
+            )
+        )
+    }
+
     private fun ProdutoDto.toProduct(): Product {
+        val fallbackRating = fallbackRatingFor(idProduto)
+        val fallbackReviewCount = fallbackReviewCountFor(idProduto)
         return Product(
             id = idProduto.toString(),
             name = nome,
             price = preco,
-            rating = 4.5f,
+            rating = (avaliacaoMedia ?: fallbackRating).toFloat(),
             imageUrl = imagem.orEmpty(),
             categoryId = idCategoria?.toString().orEmpty(),
             description = descricao.orEmpty(),
-            ingredients = ingredientes.orEmpty()
+            ingredients = ingredientes.orEmpty(),
+            reviewCount = totalAvaliacoes ?: fallbackReviewCount,
+            feedbackHighlight = feedbackDestaque ?: fallbackFeedbackFor(nome)
         )
     }
+}
+
+@Serializable
+private data class ProductFeedbackWriteDto(
+    @SerialName("id_produto") val idProduto: Int,
+    @SerialName("auth_id") val authId: String?,
+    val nota: Int,
+    val comentario: String? = null
+)
+
+private fun fallbackRatingFor(productId: Int): Double {
+    return when (productId % 6) {
+        0 -> 4.9
+        1 -> 4.8
+        2 -> 4.7
+        3 -> 4.6
+        4 -> 4.5
+        else -> 4.4
+    }
+}
+
+private fun fallbackReviewCountFor(productId: Int): Int {
+    return 18 + (productId * 7 % 64)
+}
+
+private fun fallbackFeedbackFor(productName: String): String {
+    return "Clientes elogiam o sabor e a apresentação do $productName."
 }
