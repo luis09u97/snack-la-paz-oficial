@@ -140,7 +140,7 @@ fun SignUpScreen(
                     }
 
                     if (formError == null) {
-                        authViewModel.signUp(fullName, email, password)
+                        authViewModel.signUp(fullName, email, phone, password)
                     }
                 }
             )

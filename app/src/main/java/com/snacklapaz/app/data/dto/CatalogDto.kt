@@ -74,6 +74,8 @@ data class ClienteDto(
     @SerialName("id_usuario") val idUsuario: Int? = null,
     @SerialName("auth_id") val authId: String? = null,
     @SerialName("is_admin") val isAdmin: Boolean = false,
+    val nome: String? = null,
+    val email: String? = null,
     val cpf: String? = null,
     val telefone: String? = null,
     @SerialName("data_nascimento") val dataNascimento: String? = null
@@ -81,7 +83,10 @@ data class ClienteDto(
 
 @Serializable
 data class NovoClienteDto(
-    @SerialName("auth_id") val authId: String
+    @SerialName("auth_id") val authId: String,
+    val nome: String? = null,
+    val email: String? = null,
+    val telefone: String? = null
 )
 
 @Serializable

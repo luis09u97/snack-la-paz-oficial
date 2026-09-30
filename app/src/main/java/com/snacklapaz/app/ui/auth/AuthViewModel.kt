@@ -52,10 +52,7 @@ class AuthViewModel : ViewModel() {
                 val user = client.auth.currentUserOrNull()
                 if (user != null) {
                     val email = user.email.orEmpty()
-                    onLoggedIn(
-                        email = email,
-                        name = email.substringBefore("@").replaceFirstChar { it.uppercase() }
-                    )
+                    onLoggedIn(email = email)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -74,7 +71,7 @@ class AuthViewModel : ViewModel() {
                     this.email = email
                     this.password = password
                 }
-                onLoggedIn(email, email.substringBefore("@").replaceFirstChar { it.uppercase() })
+                onLoggedIn(email = email)
             } catch (e: Exception) {
                 e.printStackTrace()
                 errorMessage = "E-mail ou senha inválidos."
@@ -84,7 +81,7 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    fun signUp(fullName: String, email: String, password: String) {
+    fun signUp(fullName: String, email: String, phone: String, password: String) {
         errorMessage = null
         isLoading = true
         viewModelScope.launch {
@@ -95,9 +92,14 @@ class AuthViewModel : ViewModel() {
                 }
                 val userId = client.auth.currentUserOrNull()?.id
                 if (userId != null) {
-                    ensureClienteProfile(userId)
+                    ensureClienteProfile(
+                        userId = userId,
+                        name = fullName,
+                        email = email,
+                        phone = phone
+                    )
                 }
-                onLoggedIn(email, fullName)
+                onLoggedIn(email = email, fallbackName = fullName)
             } catch (e: Exception) {
                 e.printStackTrace()
                 errorMessage = signUpErrorMessage(e)
@@ -107,26 +109,79 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    private suspend fun ensureClienteProfile(userId: String): ClienteDto? {
+    private suspend fun ensureClienteProfile(
+        userId: String,
+        name: String? = null,
+        email: String? = null,
+        phone: String? = null
+    ): ClienteDto? {
         val existing = client.postgrest["clientes"]
             .select { filter { eq("auth_id", userId) } }
             .decodeSingleOrNull<ClienteDto>()
 
-        if (existing != null) return existing
+        if (existing != null) {
+            updateClienteProfileIfNeeded(existing, name, email, phone)
+            return existing.copy(
+                nome = existing.nome.ifBlankOrNull(name),
+                email = existing.email.ifBlankOrNull(email),
+                telefone = existing.telefone.ifBlankOrNull(phone)
+            )
+        }
 
-        return client.postgrest["clientes"]
-            .insert(NovoClienteDto(authId = userId)) { select() }
-            .decodeSingleOrNull<ClienteDto>()
+        return runCatching {
+            client.postgrest["clientes"]
+                .insert(
+                    NovoClienteDto(
+                        authId = userId,
+                        nome = name?.takeIf { it.isNotBlank() },
+                        email = email?.takeIf { it.isNotBlank() },
+                        telefone = phone?.takeIf { it.isNotBlank() }
+                    )
+                ) { select() }
+                .decodeSingleOrNull<ClienteDto>()
+        }.getOrElse {
+            client.postgrest["clientes"]
+                .insert(mapOf("auth_id" to userId)) { select() }
+                .decodeSingleOrNull<ClienteDto>()
+        }
     }
 
-    private suspend fun onLoggedIn(email: String, name: String) {
+    private suspend fun updateClienteProfileIfNeeded(
+        cliente: ClienteDto,
+        name: String?,
+        email: String?,
+        phone: String?
+    ) {
+        val updates = buildMap {
+            if (cliente.nome.isNullOrBlank() && !name.isNullOrBlank()) put("nome", name)
+            if (cliente.email.isNullOrBlank() && !email.isNullOrBlank()) put("email", email)
+            if (cliente.telefone.isNullOrBlank() && !phone.isNullOrBlank()) put("telefone", phone)
+        }
+        if (updates.isNotEmpty()) {
+            runCatching {
+                client.postgrest["clientes"].update(updates) {
+                    filter { eq("id_cliente", cliente.idCliente) }
+                }
+            }
+        }
+    }
+
+    private suspend fun onLoggedIn(email: String, fallbackName: String? = null) {
         isLoggedIn = true
         userEmail = email
-        userName = name
         val userId = client.auth.currentUserOrNull()?.id
         if (userId != null) {
-            val cliente = ensureClienteProfile(userId)
+            val cliente = ensureClienteProfile(userId, fallbackName, email)
+            userName = cliente?.nome
+                ?.takeIf { it.isNotBlank() }
+                ?: fallbackName
+                    ?.takeIf { it.isNotBlank() }
+                ?: email.substringBefore("@").replaceFirstChar { it.uppercase() }
             isAdmin = cliente?.isAdmin ?: false
+        } else {
+            userName = fallbackName
+                ?.takeIf { it.isNotBlank() }
+                ?: email.substringBefore("@").replaceFirstChar { it.uppercase() }
         }
     }
 
@@ -154,4 +209,8 @@ class AuthViewModel : ViewModel() {
             isAdmin = false
         }
     }
+}
+
+private fun String?.ifBlankOrNull(fallback: String?): String? {
+    return takeIf { !it.isNullOrBlank() } ?: fallback?.takeIf { it.isNotBlank() }
 }

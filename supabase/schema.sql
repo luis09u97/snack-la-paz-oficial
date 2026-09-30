@@ -40,6 +40,8 @@ create table if not exists clientes (
     id_usuario int unique references usuarios(id_usuario) on delete cascade,
     auth_id uuid unique,
     is_admin boolean not null default false,
+    nome text,
+    email text,
     cpf varchar unique,
     telefone varchar,
     data_nascimento date

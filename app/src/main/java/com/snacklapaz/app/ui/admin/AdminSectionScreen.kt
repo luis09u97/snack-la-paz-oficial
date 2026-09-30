@@ -455,8 +455,19 @@ private fun InventoryCard(product: ProdutoDto, onStockChange: (Int) -> Unit) {
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 14.dp).fillMaxWidth()) {
-            AdminActionButton("Diminuir", { onStockChange((product.estoque - 1).coerceAtLeast(0)) }, Modifier.weight(1f), filled = false)
-            AdminActionButton("Adicionar", { onStockChange(product.estoque + 1) }, Modifier.weight(1f))
+            AdminStockButton(
+                icon = Icons.Filled.Remove,
+                contentDescription = "Diminuir estoque",
+                onClick = { onStockChange((product.estoque - 1).coerceAtLeast(0)) },
+                modifier = Modifier.weight(1f),
+                filled = false
+            )
+            AdminStockButton(
+                icon = Icons.Filled.Add,
+                contentDescription = "Aumentar estoque",
+                onClick = { onStockChange(product.estoque + 1) },
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
@@ -716,6 +727,35 @@ private fun AdminStatusButton(text: String, selected: Boolean, onClick: () -> Un
 }
 
 @Composable
+private fun AdminStockButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    filled: Boolean = true
+) {
+    if (filled) {
+        Button(
+            onClick = onClick,
+            colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary),
+            shape = RoundedCornerShape(18.dp),
+            modifier = modifier.height(52.dp)
+        ) {
+            Icon(icon, contentDescription = contentDescription, tint = White, modifier = Modifier.size(26.dp))
+        }
+    } else {
+        OutlinedButton(
+            onClick = onClick,
+            shape = RoundedCornerShape(18.dp),
+            border = BorderStroke(1.5.dp, OrangePrimary.copy(alpha = 0.7f)),
+            modifier = modifier.height(52.dp)
+        ) {
+            Icon(icon, contentDescription = contentDescription, tint = OrangePrimary, modifier = Modifier.size(26.dp))
+        }
+    }
+}
+
+@Composable
 private fun FlowButtons(values: List<String>, item: @Composable (String) -> Unit) {
     Column(modifier = Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         values.chunked(2).forEach { rowValues ->
@@ -892,8 +932,9 @@ private fun String.humanStatus(): String {
 
 private fun ClienteDto.adminDisplayName(): String {
     return when {
+        !nome.isNullOrBlank() -> nome
+        !email.isNullOrBlank() -> email.substringBefore("@").replaceFirstChar { it.uppercase() }
         !telefone.isNullOrBlank() -> "Cliente ${telefone}"
-        authId != null && authId.length >= 6 -> "Cliente ${authId.take(6).uppercase()}"
-        else -> if (isAdmin) "Administrador da loja" else "Cliente cadastrado"
+        else -> if (isAdmin) "Administrador da loja" else "Nome não informado"
     }
 }

@@ -115,7 +115,7 @@ class OrderRepository {
         return client.postgrest["clientes"]
             .select()
             .decodeList<ClienteDto>()
-            .sortedBy { it.idCliente }
+            .sortedWith(compareBy<ClienteDto> { it.nome?.lowercase().orEmpty() }.thenBy { it.idCliente })
     }
 
     suspend fun getAdminPayments(): List<PagamentoDto> {
