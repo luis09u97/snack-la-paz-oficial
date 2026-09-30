@@ -26,6 +26,18 @@ data class ProdutoDto(
 )
 
 @Serializable
+data class ProdutoWriteDto(
+    @SerialName("id_categoria") val idCategoria: Int?,
+    val nome: String,
+    val descricao: String? = null,
+    val preco: Double,
+    val estoque: Int,
+    val imagem: String? = null,
+    val ingredientes: String? = null,
+    val status: String
+)
+
+@Serializable
 data class UsuarioDto(
     @SerialName("id_usuario") val idUsuario: Int,
     val nome: String,
@@ -52,10 +64,17 @@ data class UsuarioPerfilDto(
 @Serializable
 data class ClienteDto(
     @SerialName("id_cliente") val idCliente: Int,
-    @SerialName("id_usuario") val idUsuario: Int,
+    @SerialName("id_usuario") val idUsuario: Int? = null,
+    @SerialName("auth_id") val authId: String? = null,
+    @SerialName("is_admin") val isAdmin: Boolean = false,
     val cpf: String? = null,
     val telefone: String? = null,
     @SerialName("data_nascimento") val dataNascimento: String? = null
+)
+
+@Serializable
+data class NovoClienteDto(
+    @SerialName("auth_id") val authId: String
 )
 
 @Serializable
@@ -82,6 +101,11 @@ data class PedidoDto(
     val status: String,
     @SerialName("valor_frete") val valorFrete: Double = 0.0,
     @SerialName("valor_total") val valorTotal: Double
+)
+
+@Serializable
+data class PedidoStatusUpdateDto(
+    val status: String
 )
 
 @Serializable

@@ -2,6 +2,7 @@ package com.snacklapaz.app.data
 
 import com.snacklapaz.app.data.dto.CategoriaDto
 import com.snacklapaz.app.data.dto.ProdutoDto
+import com.snacklapaz.app.data.dto.ProdutoWriteDto
 import com.snacklapaz.app.ui.home.model.Category
 import com.snacklapaz.app.ui.home.model.Product
 import com.snacklapaz.app.ui.home.model.iconFromName
@@ -33,24 +34,29 @@ class ProductRepository {
     }
 
     suspend fun getProducts(): List<Product> {
+        return getAllProducts().filter { product ->
+            val dto = productStatusCache[product.id]
+            dto == null || dto.isActiveStatus()
+        }
+    }
+
+    suspend fun getAdminProducts(): List<ProdutoDto> {
         val dtos = client.postgrest["produtos"]
             .select()
             .decodeList<ProdutoDto>()
 
         return dtos
-            .filter { it.status.isActiveStatus() && it.estoque > 0 }
-            .map { dto ->
-                Product(
-                    id = dto.idProduto.toString(),
-                    name = dto.nome,
-                    price = dto.preco,
-                    rating = 4.5f, // avaliação real virá da tabela "avaliacoes" futuramente
-                    imageUrl = dto.imagem.orEmpty(),
-                    categoryId = dto.idCategoria?.toString().orEmpty(),
-                    description = dto.descricao.orEmpty(),
-                    ingredients = dto.ingredientes.orEmpty()
-                )
-            }
+            .sortedBy { it.nome }
+    }
+
+    private var productStatusCache: Map<String, String?> = emptyMap()
+
+    private suspend fun getAllProducts(): List<Product> {
+        val dtos = getAdminProducts()
+        productStatusCache = dtos.associate { it.idProduto.toString() to it.status }
+        return dtos
+            .filter { it.estoque > 0 }
+            .map { dto -> dto.toProduct() }
     }
 
     suspend fun searchProducts(query: String, categoryId: String? = null): List<Product> {
@@ -65,5 +71,50 @@ class ProductRepository {
 
     private fun String?.isActiveStatus(): Boolean {
         return this == null || equals("ATIVO", ignoreCase = true) || equals("ATIVA", ignoreCase = true)
+    }
+
+    suspend fun saveProduct(dto: ProdutoDto) {
+        val payload = ProdutoWriteDto(
+            idCategoria = dto.idCategoria,
+            nome = dto.nome,
+            descricao = dto.descricao,
+            preco = dto.preco,
+            estoque = dto.estoque,
+            imagem = dto.imagem,
+            ingredientes = dto.ingredientes,
+            status = dto.status ?: "ATIVO"
+        )
+        if (dto.idProduto > 0) {
+            client.postgrest["produtos"].update(payload) {
+                filter { eq("id_produto", dto.idProduto) }
+            }
+        } else {
+            client.postgrest["produtos"].insert(payload)
+        }
+    }
+
+    suspend fun updateProductStatus(productId: Int, status: String) {
+        client.postgrest["produtos"].update(mapOf("status" to status)) {
+            filter { eq("id_produto", productId) }
+        }
+    }
+
+    suspend fun updateStock(productId: Int, stock: Int) {
+        client.postgrest["produtos"].update(mapOf("estoque" to stock)) {
+            filter { eq("id_produto", productId) }
+        }
+    }
+
+    private fun ProdutoDto.toProduct(): Product {
+        return Product(
+            id = idProduto.toString(),
+            name = nome,
+            price = preco,
+            rating = 4.5f,
+            imageUrl = imagem.orEmpty(),
+            categoryId = idCategoria?.toString().orEmpty(),
+            description = descricao.orEmpty(),
+            ingredients = ingredientes.orEmpty()
+        )
     }
 }

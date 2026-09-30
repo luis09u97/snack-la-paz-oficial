@@ -1,19 +1,17 @@
 package com.snacklapaz.app.ui.admin
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -24,7 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.ReceiptLong
-import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -33,18 +30,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.snacklapaz.app.ui.admin.model.AdminSection
 import com.snacklapaz.app.ui.admin.model.adminSections
+import com.snacklapaz.app.ui.common.UiState
+import com.snacklapaz.app.ui.components.EmptyState
 import com.snacklapaz.app.ui.components.SnackTopBar
 import com.snacklapaz.app.ui.theme.CreamBackground
 import com.snacklapaz.app.ui.theme.ErrorRed
-import com.snacklapaz.app.ui.theme.GrayBorder
 import com.snacklapaz.app.ui.theme.GrayDark
 import com.snacklapaz.app.ui.theme.GrayMedium
 import com.snacklapaz.app.ui.theme.OrangeLight
@@ -55,7 +54,8 @@ import com.snacklapaz.app.ui.theme.White
 @Composable
 fun AdminDashboardScreen(
     onBackClick: () -> Unit,
-    onSectionClick: (AdminSection) -> Unit
+    onSectionClick: (AdminSection) -> Unit,
+    adminViewModel: AdminViewModel = viewModel()
 ) {
     Column(
         modifier = Modifier
@@ -70,12 +70,17 @@ fun AdminDashboardScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp)
         ) {
-            // ==== Cards de métricas (dados de exemplo até a integração com Supabase) ====
-            StatCardsGrid()
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            SalesChartCard()
+            when (val state = adminViewModel.dashboardState) {
+                UiState.Loading -> Text(text = "Carregando dados...", color = GrayMedium)
+                is UiState.Error -> EmptyState(
+                    icon = Icons.Filled.Warning,
+                    title = "Dashboard indisponível",
+                    description = state.message,
+                    actionLabel = "Tentar novamente",
+                    onActionClick = { adminViewModel.loadDashboard() }
+                )
+                is UiState.Success -> StatCardsGrid(stats = state.data)
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -92,21 +97,21 @@ fun AdminDashboardScreen(
 }
 
 @Composable
-private fun StatCardsGrid() {
+private fun StatCardsGrid(stats: AdminDashboardStats) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
             StatCard(
                 icon = Icons.Filled.AttachMoney,
                 iconColor = SuccessGreen,
-                label = "Vendas hoje",
-                value = "Bs 1.240,50",
+                label = "Vendas registradas",
+                value = "Bs ${"%.2f".format(stats.salesTotal)}",
                 modifier = Modifier.weight(1f)
             )
             StatCard(
                 icon = Icons.Filled.ReceiptLong,
                 iconColor = OrangePrimary,
-                label = "Pedidos hoje",
-                value = "38",
+                label = "Pedidos",
+                value = stats.ordersCount.toString(),
                 modifier = Modifier.weight(1f)
             )
         }
@@ -114,15 +119,15 @@ private fun StatCardsGrid() {
             StatCard(
                 icon = Icons.Filled.People,
                 iconColor = OrangePrimary,
-                label = "Clientes ativos",
-                value = "156",
+                label = "Clientes",
+                value = stats.customersCount.toString(),
                 modifier = Modifier.weight(1f)
             )
             StatCard(
                 icon = Icons.Filled.Warning,
                 iconColor = ErrorRed,
                 label = "Estoque baixo",
-                value = "5 itens",
+                value = "${stats.lowStockCount} itens",
                 modifier = Modifier.weight(1f)
             )
         }
@@ -148,67 +153,6 @@ private fun StatCard(
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = value, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = GrayDark)
             Text(text = label, fontSize = 12.sp, color = GrayMedium)
-        }
-    }
-}
-
-@Composable
-private fun SalesChartCard() {
-    // Dados de exemplo (vendas dos últimos 7 dias) até a integração com Supabase
-    val sample = listOf(0.4f, 0.65f, 0.5f, 0.8f, 0.6f, 0.95f, 0.7f)
-    val days = listOf("Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom")
-
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = White,
-        shadowElevation = 1.dp,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(imageVector = Icons.Filled.TrendingUp, contentDescription = null, tint = OrangePrimary, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(text = "Vendas nos últimos 7 dias", fontWeight = FontWeight.SemiBold, color = GrayDark, fontSize = 14.sp)
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                sample.forEach { fraction ->
-                    Column(
-                        modifier = Modifier.weight(1f).fillMaxSize(),
-                        verticalArrangement = Arrangement.Bottom,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
-                            color = OrangeLight,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .fillMaxHeight(fraction)
-                        ) {}
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                days.forEach { day ->
-                    Text(
-                        text = day,
-                        fontSize = 10.sp,
-                        color = GrayMedium,
-                        modifier = Modifier.weight(1f),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
-                }
-            }
         }
     }
 }
@@ -245,11 +189,7 @@ private fun SectionCard(section: AdminSection, onClick: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Surface(shape = RoundedCornerShape(10.dp), color = OrangeLight, modifier = Modifier.size(40.dp)) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
+                Box(contentAlignment = Alignment.Center) {
                     Icon(imageVector = section.icon, contentDescription = section.title, tint = OrangePrimary, modifier = Modifier.size(20.dp))
                 }
             }
@@ -258,7 +198,7 @@ private fun SectionCard(section: AdminSection, onClick: () -> Unit) {
                 text = section.title,
                 fontSize = 11.sp,
                 color = GrayDark,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                textAlign = TextAlign.Center,
                 maxLines = 1
             )
         }
