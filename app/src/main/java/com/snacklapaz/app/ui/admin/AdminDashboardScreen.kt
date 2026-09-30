@@ -20,11 +20,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -68,8 +72,30 @@ fun AdminDashboardScreen(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(20.dp)
+                .padding(18.dp)
         ) {
+            Text(
+                text = "Visão geral da loja",
+                color = GrayDark,
+                fontWeight = FontWeight.Bold,
+                fontSize = 27.sp
+            )
+            Text(
+                text = "Dados reais do Supabase para acompanhar vendas, pedidos e operação.",
+                color = GrayMedium,
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+
+            PeriodFilter(
+                selectedPeriod = adminViewModel.selectedPeriod,
+                onPeriodClick = { adminViewModel.updatePeriod(it) }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             when (val state = adminViewModel.dashboardState) {
                 UiState.Loading -> Text(text = "Carregando dados...", color = GrayMedium)
                 is UiState.Error -> EmptyState(
@@ -92,6 +118,22 @@ fun AdminDashboardScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             SectionsGrid(sections = adminSections, onSectionClick = onSectionClick)
+        }
+    }
+}
+
+@Composable
+private fun PeriodFilter(
+    selectedPeriod: AdminPeriod,
+    onPeriodClick: (AdminPeriod) -> Unit
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        AdminPeriod.entries.forEach { period ->
+            FilterChip(
+                selected = selectedPeriod == period,
+                onClick = { onPeriodClick(period) },
+                label = { Text(period.label, fontSize = 12.sp) }
+            )
         }
     }
 }
@@ -124,12 +166,61 @@ private fun StatCardsGrid(stats: AdminDashboardStats) {
                 modifier = Modifier.weight(1f)
             )
             StatCard(
+                icon = Icons.Filled.RestaurantMenu,
+                iconColor = OrangePrimary,
+                label = "Produtos",
+                value = stats.productsCount.toString(),
+                modifier = Modifier.weight(1f)
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+            StatCard(
                 icon = Icons.Filled.Warning,
                 iconColor = ErrorRed,
                 label = "Estoque baixo",
                 value = "${stats.lowStockCount} itens",
                 modifier = Modifier.weight(1f)
             )
+            StatCard(
+                icon = Icons.Filled.Payments,
+                iconColor = OrangePrimary,
+                label = "Pagamentos pendentes",
+                value = stats.pendingPaymentsCount.toString(),
+                modifier = Modifier.weight(1f)
+            )
+        }
+        AdminAlerts(stats = stats)
+    }
+}
+
+@Composable
+private fun AdminAlerts(stats: AdminDashboardStats) {
+    val alerts = buildList {
+        if (stats.lowStockCount > 0) add("${stats.lowStockCount} produto(s) com estoque baixo.")
+        if (stats.outOfStockCount > 0) add("${stats.outOfStockCount} produto(s) sem estoque.")
+        if (stats.pendingPaymentsCount > 0) add("${stats.pendingPaymentsCount} pagamento(s) pendente(s).")
+        if (stats.preparingOrdersCount > 0) add("${stats.preparingOrdersCount} pedido(s) em preparação.")
+    }
+    if (alerts.isEmpty()) {
+        Surface(shape = RoundedCornerShape(18.dp), color = White, shadowElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = "Nenhum alerta operacional no momento.",
+                color = SuccessGreen,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+    } else {
+        Surface(shape = RoundedCornerShape(18.dp), color = White, shadowElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(text = "Alertas administrativos", color = GrayDark, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                alerts.forEach {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.Warning, contentDescription = null, tint = ErrorRed, modifier = Modifier.size(18.dp))
+                        Text(text = it, color = GrayDark, fontSize = 14.sp, modifier = Modifier.padding(start = 8.dp))
+                    }
+                }
+            }
         }
     }
 }
@@ -143,16 +234,16 @@ private fun StatCard(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(18.dp),
         color = White,
-        shadowElevation = 1.dp,
+        shadowElevation = 2.dp,
         modifier = modifier
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Icon(imageVector = icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(22.dp))
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = value, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = GrayDark)
-            Text(text = label, fontSize = 12.sp, color = GrayMedium)
+        Column(modifier = Modifier.padding(16.dp)) {
+            Icon(imageVector = icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(26.dp))
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(text = value, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = GrayDark)
+            Text(text = label, fontSize = 13.sp, color = GrayMedium, lineHeight = 17.sp)
         }
     }
 }

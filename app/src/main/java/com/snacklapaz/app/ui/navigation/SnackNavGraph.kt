@@ -12,7 +12,10 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -41,6 +45,7 @@ import com.snacklapaz.app.ui.checkout.CashPaymentScreen
 import com.snacklapaz.app.ui.checkout.OrderConfirmationScreen
 import com.snacklapaz.app.ui.checkout.PaymentScreen
 import com.snacklapaz.app.ui.checkout.PixPaymentScreen
+import com.snacklapaz.app.ui.components.EmptyState
 import com.snacklapaz.app.ui.home.HomeScreen
 import com.snacklapaz.app.ui.orders.OrdersScreen
 import com.snacklapaz.app.ui.orders.OrdersViewModel
@@ -217,9 +222,7 @@ fun SnackNavGraph() {
                                 }
                             )
                         } else {
-                            androidx.compose.runtime.LaunchedEffect(Unit) {
-                                navController.popBackStack()
-                            }
+                            AdminAccessDenied(onBackClick = { navController.popBackStack() })
                         }
                     }
 
@@ -230,7 +233,9 @@ fun SnackNavGraph() {
                         val sectionId = backStackEntry.arguments?.getString("sectionId").orEmpty()
                         val section = adminSections.find { it.id == sectionId }
 
-                        if (section != null) {
+                        if (!authViewModel.isAdmin) {
+                            AdminAccessDenied(onBackClick = { navController.popBackStack() })
+                        } else if (section != null) {
                             AdminSectionScreen(
                                 sectionId = section.id,
                                 title = section.title,
@@ -363,6 +368,19 @@ fun SnackNavGraph() {
         CartAddFeedback(
             animationKey = cartViewModel.addToCartAnimationKey,
             modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    }
+}
+
+@Composable
+private fun AdminAccessDenied(onBackClick: () -> Unit) {
+    Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+        EmptyState(
+            icon = Icons.Filled.Security,
+            title = "Acesso negado",
+            description = "Somente contas administrativas podem abrir o painel interno.",
+            actionLabel = "Voltar",
+            onActionClick = onBackClick
         )
     }
 }

@@ -12,6 +12,13 @@ data class CategoriaDto(
 )
 
 @Serializable
+data class CategoriaWriteDto(
+    val nome: String,
+    val descricao: String? = null,
+    val status: String
+)
+
+@Serializable
 data class ProdutoDto(
     @SerialName("id_produto") val idProduto: Int,
     @SerialName("id_categoria") val idCategoria: Int? = null,
@@ -105,6 +112,11 @@ data class PedidoDto(
 
 @Serializable
 data class PedidoStatusUpdateDto(
+    val status: String
+)
+
+@Serializable
+data class PagamentoStatusUpdateDto(
     val status: String
 )
 

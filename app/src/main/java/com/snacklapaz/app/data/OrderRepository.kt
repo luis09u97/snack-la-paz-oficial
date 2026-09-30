@@ -3,6 +3,8 @@ package com.snacklapaz.app.data
 import com.snacklapaz.app.data.dto.ClienteDto
 import com.snacklapaz.app.data.dto.EnderecoDto
 import com.snacklapaz.app.data.dto.ItemPedidoDto
+import com.snacklapaz.app.data.dto.PagamentoDto
+import com.snacklapaz.app.data.dto.PagamentoStatusUpdateDto
 import com.snacklapaz.app.data.dto.PedidoStatusUpdateDto
 import com.snacklapaz.app.data.dto.PedidoDto
 import com.snacklapaz.app.data.dto.ProdutoDto
@@ -109,9 +111,35 @@ class OrderRepository {
             .sortedByDescending { it.idPedido }
     }
 
+    suspend fun getAdminCustomers(): List<ClienteDto> {
+        return client.postgrest["clientes"]
+            .select()
+            .decodeList<ClienteDto>()
+            .sortedBy { it.idCliente }
+    }
+
+    suspend fun getAdminPayments(): List<PagamentoDto> {
+        return client.postgrest["pagamentos"]
+            .select()
+            .decodeList<PagamentoDto>()
+            .sortedByDescending { it.idPagamento }
+    }
+
+    suspend fun getAdminOrderItems(): List<ItemPedidoDto> {
+        return client.postgrest["itens_pedido"]
+            .select()
+            .decodeList<ItemPedidoDto>()
+    }
+
     suspend fun updateOrderStatus(orderId: Int, status: String) {
         client.postgrest["pedidos"].update(PedidoStatusUpdateDto(status)) {
             filter { eq("id_pedido", orderId) }
+        }
+    }
+
+    suspend fun updatePaymentStatus(paymentId: Int, status: String) {
+        client.postgrest["pagamentos"].update(PagamentoStatusUpdateDto(status)) {
+            filter { eq("id_pagamento", paymentId) }
         }
     }
 

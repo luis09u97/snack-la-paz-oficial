@@ -1,6 +1,7 @@
 package com.snacklapaz.app.data
 
 import com.snacklapaz.app.data.dto.CategoriaDto
+import com.snacklapaz.app.data.dto.CategoriaWriteDto
 import com.snacklapaz.app.data.dto.ProdutoDto
 import com.snacklapaz.app.data.dto.ProdutoWriteDto
 import com.snacklapaz.app.ui.home.model.Category
@@ -17,11 +18,7 @@ class ProductRepository {
     private val client = SupabaseClientProvider.client
 
     suspend fun getCategories(): List<Category> {
-        val dtos = client.postgrest["categorias"]
-            .select()
-            .decodeList<CategoriaDto>()
-
-        return dtos
+        return getAdminCategories()
             .filter { it.status.isActiveStatus() }
             .sortedBy { it.nome }
             .map { dto ->
@@ -31,6 +28,15 @@ class ProductRepository {
                     icon = iconFromName(dto.nome)
                 )
             }
+    }
+
+    suspend fun getAdminCategories(): List<CategoriaDto> {
+        val dtos = client.postgrest["categorias"]
+            .select()
+            .decodeList<CategoriaDto>()
+
+        return dtos
+            .sortedBy { it.nome }
     }
 
     suspend fun getProducts(): List<Product> {
@@ -102,6 +108,27 @@ class ProductRepository {
     suspend fun updateStock(productId: Int, stock: Int) {
         client.postgrest["produtos"].update(mapOf("estoque" to stock)) {
             filter { eq("id_produto", productId) }
+        }
+    }
+
+    suspend fun saveCategory(dto: CategoriaDto) {
+        val payload = CategoriaWriteDto(
+            nome = dto.nome,
+            descricao = dto.descricao,
+            status = dto.status ?: "ATIVA"
+        )
+        if (dto.idCategoria > 0) {
+            client.postgrest["categorias"].update(payload) {
+                filter { eq("id_categoria", dto.idCategoria) }
+            }
+        } else {
+            client.postgrest["categorias"].insert(payload)
+        }
+    }
+
+    suspend fun updateCategoryStatus(categoryId: Int, status: String) {
+        client.postgrest["categorias"].update(mapOf("status" to status)) {
+            filter { eq("id_categoria", categoryId) }
         }
     }
 
