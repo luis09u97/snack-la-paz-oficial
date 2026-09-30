@@ -1,7 +1,9 @@
 package com.snacklapaz.app.ui.admin
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,22 +14,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Payments
-import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -48,10 +46,11 @@ import com.snacklapaz.app.ui.components.EmptyState
 import com.snacklapaz.app.ui.components.SnackTopBar
 import com.snacklapaz.app.ui.theme.CreamBackground
 import com.snacklapaz.app.ui.theme.ErrorRed
+import com.snacklapaz.app.ui.theme.GrayBorder
 import com.snacklapaz.app.ui.theme.GrayDark
 import com.snacklapaz.app.ui.theme.GrayMedium
-import com.snacklapaz.app.ui.theme.OrangeLight
 import com.snacklapaz.app.ui.theme.OrangePrimary
+import com.snacklapaz.app.ui.theme.OrangeSoft
 import com.snacklapaz.app.ui.theme.SuccessGreen
 import com.snacklapaz.app.ui.theme.White
 
@@ -105,15 +104,25 @@ fun AdminDashboardScreen(
                     actionLabel = "Tentar novamente",
                     onActionClick = { adminViewModel.loadDashboard() }
                 )
-                is UiState.Success -> StatCardsGrid(stats = state.data)
+                is UiState.Success -> StatCardsGrid(
+                    stats = state.data,
+                    onSectionClick = onSectionClick
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
                 text = "Gerenciar",
-                style = MaterialTheme.typography.titleLarge,
-                color = GrayDark
+                color = GrayDark,
+                fontWeight = FontWeight.Bold,
+                fontSize = 24.sp
+            )
+            Text(
+                text = "Toque em uma área para administrar a loja.",
+                color = GrayMedium,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(top = 3.dp)
             )
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -127,7 +136,12 @@ private fun PeriodFilter(
     selectedPeriod: AdminPeriod,
     onPeriodClick: (AdminPeriod) -> Unit
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+    ) {
         AdminPeriod.entries.forEach { period ->
             FilterChip(
                 selected = selectedPeriod == period,
@@ -139,7 +153,10 @@ private fun PeriodFilter(
 }
 
 @Composable
-private fun StatCardsGrid(stats: AdminDashboardStats) {
+private fun StatCardsGrid(
+    stats: AdminDashboardStats,
+    onSectionClick: (AdminSection) -> Unit
+) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
             StatCard(
@@ -147,14 +164,16 @@ private fun StatCardsGrid(stats: AdminDashboardStats) {
                 iconColor = SuccessGreen,
                 label = "Vendas registradas",
                 value = "Bs ${"%.2f".format(stats.salesTotal)}",
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onClick = { adminSections.open("reports", onSectionClick) }
             )
             StatCard(
-                icon = Icons.Filled.ReceiptLong,
+                icon = Icons.AutoMirrored.Filled.ReceiptLong,
                 iconColor = OrangePrimary,
                 label = "Pedidos",
                 value = stats.ordersCount.toString(),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onClick = { adminSections.open("orders", onSectionClick) }
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
@@ -163,14 +182,16 @@ private fun StatCardsGrid(stats: AdminDashboardStats) {
                 iconColor = OrangePrimary,
                 label = "Clientes",
                 value = stats.customersCount.toString(),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onClick = { adminSections.open("customers", onSectionClick) }
             )
             StatCard(
                 icon = Icons.Filled.RestaurantMenu,
                 iconColor = OrangePrimary,
                 label = "Produtos",
                 value = stats.productsCount.toString(),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onClick = { adminSections.open("products", onSectionClick) }
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
@@ -179,45 +200,70 @@ private fun StatCardsGrid(stats: AdminDashboardStats) {
                 iconColor = ErrorRed,
                 label = "Estoque baixo",
                 value = "${stats.lowStockCount} itens",
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onClick = { adminSections.open("inventory", onSectionClick) }
             )
             StatCard(
                 icon = Icons.Filled.Payments,
                 iconColor = OrangePrimary,
                 label = "Pagamentos pendentes",
                 value = stats.pendingPaymentsCount.toString(),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onClick = { adminSections.open("payments", onSectionClick) }
             )
         }
-        AdminAlerts(stats = stats)
+        AdminAlerts(stats = stats, onSectionClick = onSectionClick)
     }
 }
 
 @Composable
-private fun AdminAlerts(stats: AdminDashboardStats) {
+private fun AdminAlerts(
+    stats: AdminDashboardStats,
+    onSectionClick: (AdminSection) -> Unit
+) {
     val alerts = buildList {
-        if (stats.lowStockCount > 0) add("${stats.lowStockCount} produto(s) com estoque baixo.")
-        if (stats.outOfStockCount > 0) add("${stats.outOfStockCount} produto(s) sem estoque.")
-        if (stats.pendingPaymentsCount > 0) add("${stats.pendingPaymentsCount} pagamento(s) pendente(s).")
-        if (stats.preparingOrdersCount > 0) add("${stats.preparingOrdersCount} pedido(s) em preparação.")
+        if (stats.lowStockCount > 0) add(AdminAlert("${stats.lowStockCount} produto(s) com estoque baixo.", "inventory"))
+        if (stats.outOfStockCount > 0) add(AdminAlert("${stats.outOfStockCount} produto(s) sem estoque.", "inventory"))
+        if (stats.pendingPaymentsCount > 0) add(AdminAlert("${stats.pendingPaymentsCount} pagamento(s) pendente(s).", "payments"))
+        if (stats.preparingOrdersCount > 0) add(AdminAlert("${stats.preparingOrdersCount} pedido(s) em preparação.", "orders"))
     }
     if (alerts.isEmpty()) {
-        Surface(shape = RoundedCornerShape(18.dp), color = White, shadowElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
+        Surface(
+            shape = RoundedCornerShape(22.dp),
+            color = White,
+            shadowElevation = 2.dp,
+            border = BorderStroke(1.dp, GrayBorder.copy(alpha = 0.65f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text(
                 text = "Nenhum alerta operacional no momento.",
                 color = SuccessGreen,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(16.dp)
+                fontSize = 15.sp,
+                modifier = Modifier.padding(18.dp)
             )
         }
     } else {
-        Surface(shape = RoundedCornerShape(18.dp), color = White, shadowElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(text = "Alertas administrativos", color = GrayDark, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                alerts.forEach {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.Warning, contentDescription = null, tint = ErrorRed, modifier = Modifier.size(18.dp))
-                        Text(text = it, color = GrayDark, fontSize = 14.sp, modifier = Modifier.padding(start = 8.dp))
+        Surface(
+            shape = RoundedCornerShape(22.dp),
+            color = White,
+            shadowElevation = 2.dp,
+            border = BorderStroke(1.dp, ErrorRed.copy(alpha = 0.14f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(text = "Alertas administrativos", color = GrayDark, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                alerts.forEach { alert ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { adminSections.open(alert.sectionId, onSectionClick) }
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Icon(Icons.Filled.Warning, contentDescription = null, tint = ErrorRed, modifier = Modifier.size(20.dp))
+                        Text(text = alert.message, color = GrayDark, fontSize = 15.sp, modifier = Modifier.weight(1f).padding(start = 9.dp))
+                        Text(text = "Abrir", color = OrangePrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -231,19 +277,25 @@ private fun StatCard(
     iconColor: Color,
     label: String,
     value: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
 ) {
     Surface(
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(22.dp),
         color = White,
-        shadowElevation = 2.dp,
-        modifier = modifier
+        shadowElevation = 3.dp,
+        border = BorderStroke(1.dp, GrayBorder.copy(alpha = 0.65f)),
+        modifier = modifier.clickable(onClick = onClick)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Icon(imageVector = icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(26.dp))
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(text = value, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = GrayDark)
-            Text(text = label, fontSize = 13.sp, color = GrayMedium, lineHeight = 17.sp)
+        Column(modifier = Modifier.padding(18.dp)) {
+            Surface(shape = RoundedCornerShape(14.dp), color = iconColor.copy(alpha = 0.12f), modifier = Modifier.size(44.dp)) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(imageVector = icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(26.dp))
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(text = value, fontWeight = FontWeight.Bold, fontSize = 22.sp, color = GrayDark)
+            Text(text = label, fontSize = 14.sp, color = GrayMedium, lineHeight = 18.sp)
         }
     }
 }
@@ -253,45 +305,92 @@ private fun SectionsGrid(
     sections: List<AdminSection>,
     onSectionClick: (AdminSection) -> Unit
 ) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(3),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.height(((sections.size / 3 + 1) * 100).dp)
-    ) {
-        items(sections) { section ->
-            SectionCard(section = section, onClick = { onSectionClick(section) })
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        sections.chunked(2).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                row.forEach { section ->
+                    SectionCard(
+                        section = section,
+                        onClick = { onSectionClick(section) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                if (row.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun SectionCard(section: AdminSection, onClick: () -> Unit) {
+private fun SectionCard(
+    section: AdminSection,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(22.dp),
         color = White,
-        shadowElevation = 1.dp,
-        modifier = Modifier
-            .fillMaxWidth()
+        shadowElevation = 3.dp,
+        border = BorderStroke(1.dp, GrayBorder.copy(alpha = 0.65f)),
+        modifier = modifier
+            .height(128.dp)
             .clickable(onClick = onClick)
     ) {
         Column(
-            modifier = Modifier.padding(vertical = 16.dp, horizontal = 8.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(14.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Surface(shape = RoundedCornerShape(10.dp), color = OrangeLight, modifier = Modifier.size(40.dp)) {
+            Surface(shape = RoundedCornerShape(16.dp), color = OrangeSoft, modifier = Modifier.size(56.dp)) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(imageVector = section.icon, contentDescription = section.title, tint = OrangePrimary, modifier = Modifier.size(20.dp))
+                    Icon(imageVector = section.icon, contentDescription = section.title, tint = OrangePrimary, modifier = Modifier.size(30.dp))
                 }
             }
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             Text(
                 text = section.title,
-                fontSize = 11.sp,
+                fontSize = 15.sp,
                 color = GrayDark,
+                fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 maxLines = 1
             )
+            Text(
+                text = section.subtitle(),
+                fontSize = 11.sp,
+                color = GrayMedium,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                modifier = Modifier.padding(top = 3.dp)
+            )
         }
+    }
+}
+
+private data class AdminAlert(
+    val message: String,
+    val sectionId: String
+)
+
+private fun List<AdminSection>.open(sectionId: String, onSectionClick: (AdminSection) -> Unit) {
+    firstOrNull { it.id == sectionId }?.let(onSectionClick)
+}
+
+private fun AdminSection.subtitle(): String {
+    return when (id) {
+        "products" -> "Catálogo"
+        "inventory" -> "Quantidades"
+        "orders" -> "Status"
+        "payments" -> "Controle"
+        "customers" -> "Cadastro"
+        "categories" -> "Cardápio"
+        "promotions" -> "Campanhas"
+        "reports" -> "Vendas"
+        "activities" -> "Histórico"
+        "settings" -> "Loja"
+        else -> "Abrir"
     }
 }
