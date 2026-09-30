@@ -1,5 +1,6 @@
 package com.snacklapaz.app.ui.cart
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,9 +23,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,7 +45,9 @@ import com.snacklapaz.app.ui.theme.GrayBorder
 import com.snacklapaz.app.ui.theme.GrayDark
 import com.snacklapaz.app.ui.theme.GrayLight
 import com.snacklapaz.app.ui.theme.GrayMedium
+import com.snacklapaz.app.ui.theme.OrangeLight
 import com.snacklapaz.app.ui.theme.OrangePrimary
+import com.snacklapaz.app.ui.theme.OrangeSoft
 import com.snacklapaz.app.ui.theme.White
 
 @Composable
@@ -58,7 +61,7 @@ fun CartScreen(
 
     if (items.isEmpty()) {
         EmptyState(
-            icon = Icons.Outlined.ShoppingCart,
+            icon = Icons.Filled.ShoppingCart,
             title = "Seu carrinho está vazio",
             description = "Explore nossos produtos e monte seu pedido.",
             actionLabel = "Ver produtos",
@@ -72,16 +75,11 @@ fun CartScreen(
             .fillMaxSize()
             .background(CreamBackground)
     ) {
-        Text(
-            text = "Carrinho",
-            style = MaterialTheme.typography.headlineMedium,
-            color = GrayDark,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
-        )
+        CartHeader(itemCount = items.sumOf { it.quantity })
 
         LazyColumn(
             modifier = Modifier.weight(1f),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp)
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 18.dp, vertical = 8.dp)
         ) {
             items(items, key = { it.productId }) { item ->
                 CartItemRow(
@@ -113,40 +111,43 @@ private fun CartItemRow(
     onRemove: () -> Unit
 ) {
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(24.dp),
         color = White,
-        shadowElevation = 1.dp,
+        shadowElevation = 3.dp,
+        border = BorderStroke(1.dp, OrangeLight.copy(alpha = 0.7f)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             SnackAsyncImage(
                 model = item.imageUrl,
                 contentDescription = item.name,
                 modifier = Modifier
-                    .size(64.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .size(86.dp)
+                    .clip(RoundedCornerShape(18.dp))
                     .background(GrayLight)
             )
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(14.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = item.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = GrayDark
+                    color = GrayDark,
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "Bs ${"%.2f".format(item.unitPrice)}",
                     color = OrangePrimary,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 QuantityStepper(
                     quantity = item.quantity,
                     onIncrease = onIncrease,
@@ -159,9 +160,44 @@ private fun CartItemRow(
                 contentDescription = "Remover ${item.name}",
                 tint = ErrorRed,
                 modifier = Modifier
-                    .size(22.dp)
+                    .size(28.dp)
                     .clickable(onClick = onRemove)
             )
+        }
+    }
+}
+
+@Composable
+private fun CartHeader(itemCount: Int) {
+    Surface(
+        color = White,
+        shadowElevation = 2.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(shape = CircleShape, color = OrangeLight, modifier = Modifier.size(58.dp)) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Filled.ShoppingCart,
+                        contentDescription = null,
+                        tint = OrangePrimary,
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = "Carrinho", color = GrayDark, fontSize = 29.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "$itemCount item(ns) pronto(s) para finalizar",
+                    color = GrayMedium,
+                    fontSize = 15.sp,
+                    lineHeight = 20.sp
+                )
+            }
         }
     }
 }
@@ -175,15 +211,17 @@ private fun QuantityStepper(
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(GrayLight)
+            .clip(RoundedCornerShape(999.dp))
+            .background(OrangeSoft)
+            .padding(horizontal = 2.dp, vertical = 2.dp)
     ) {
         StepperButton(icon = Icons.Filled.Remove, contentDescription = "Diminuir quantidade", onClick = onDecrease)
         Text(
             text = quantity.toString(),
-            modifier = Modifier.padding(horizontal = 12.dp),
-            fontWeight = FontWeight.SemiBold,
-            color = GrayDark
+            modifier = Modifier.padding(horizontal = 16.dp),
+            fontWeight = FontWeight.Bold,
+            color = GrayDark,
+            fontSize = 17.sp
         )
         StepperButton(icon = Icons.Filled.Add, contentDescription = "Aumentar quantidade", onClick = onIncrease)
     }
@@ -197,8 +235,9 @@ private fun StepperButton(
 ) {
     Box(
         modifier = Modifier
-            .size(28.dp)
+            .size(34.dp)
             .clip(CircleShape)
+            .background(White)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
@@ -206,7 +245,7 @@ private fun StepperButton(
             imageVector = icon,
             contentDescription = contentDescription,
             tint = OrangePrimary,
-            modifier = Modifier.size(16.dp)
+            modifier = Modifier.size(18.dp)
         )
     }
 }
@@ -222,10 +261,12 @@ private fun CartSummary(
 ) {
     Surface(
         color = White,
-        shadowElevation = 8.dp,
+        shadowElevation = 10.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp)) {
+            Text(text = "Resumo do pedido", color = GrayDark, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Spacer(modifier = Modifier.height(10.dp))
             SummaryRow(label = "Subtotal", value = subtotal)
             SummaryRow(label = "Taxa de entrega", value = deliveryFee)
             if (discount > 0) {
@@ -233,18 +274,18 @@ private fun CartSummary(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            androidx.compose.material3.HorizontalDivider(color = GrayBorder)
-            Spacer(modifier = Modifier.height(8.dp))
+            HorizontalDivider(color = GrayBorder)
+            Spacer(modifier = Modifier.height(10.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(text = "Total", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = GrayDark)
+                Text(text = "Total", fontWeight = FontWeight.Bold, fontSize = 21.sp, color = GrayDark)
                 Text(
                     text = "Bs ${"%.2f".format(total)}",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
+                    fontSize = 22.sp,
                     color = OrangePrimary
                 )
             }
@@ -292,6 +333,6 @@ private fun SummaryRow(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(text = label, color = GrayMedium, fontSize = 14.sp)
-        Text(text = "Bs ${"%.2f".format(value)}", color = valueColor, fontSize = 14.sp)
+        Text(text = "Bs ${"%.2f".format(value)}", color = valueColor, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
     }
 }

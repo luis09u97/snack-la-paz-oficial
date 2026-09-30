@@ -1,8 +1,10 @@
 package com.snacklapaz.app.ui.checkout
 
 import android.content.Context
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
@@ -23,7 +26,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -51,6 +53,7 @@ import com.snacklapaz.app.ui.theme.GrayDark
 import com.snacklapaz.app.ui.theme.GrayMedium
 import com.snacklapaz.app.ui.theme.OrangeLight
 import com.snacklapaz.app.ui.theme.OrangePrimary
+import com.snacklapaz.app.ui.theme.OrangeSoft
 import com.snacklapaz.app.ui.theme.White
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -199,8 +202,11 @@ fun AddressScreen(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(20.dp)
+                .padding(horizontal = 18.dp, vertical = 16.dp)
         ) {
+            CheckoutAddressHero(hasSavedAddress = initialAddress.hasAnyDeliveryInfo())
+            Spacer(modifier = Modifier.height(18.dp))
+
             SnackTextField(
                 value = fullName,
                 onValueChange = {
@@ -210,7 +216,7 @@ fun AddressScreen(
                 label = "Nome completo",
                 leadingIcon = Icons.Filled.Person
             )
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             SnackTextField(
                 value = phone,
@@ -223,7 +229,7 @@ fun AddressScreen(
                 leadingIcon = Icons.Filled.Phone,
                 keyboardType = KeyboardType.Phone
             )
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             SnackTextField(
                 value = cep,
@@ -241,12 +247,13 @@ fun AddressScreen(
                 Text(
                     text = cepStatus.orEmpty(),
                     color = if (isCepLoading) GrayMedium else OrangePrimary,
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(top = 6.dp, start = 4.dp)
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 8.dp, start = 4.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             AddressPreviewCard(
                 street = street,
@@ -255,7 +262,7 @@ fun AddressScreen(
                 state = state
             )
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SnackTextField(
@@ -279,7 +286,7 @@ fun AddressScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(22.dp))
 
             OrderSummaryCard(
                 subtotal = cartViewModel.subtotal,
@@ -289,7 +296,7 @@ fun AddressScreen(
         }
 
         Surface(color = White, shadowElevation = 8.dp, modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(20.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp)) {
                 SnackPrimaryButton(
                     text = "Continuar para pagamento",
                     enabled = isFormValid,
@@ -316,6 +323,53 @@ fun AddressScreen(
 }
 
 @Composable
+private fun CheckoutAddressHero(hasSavedAddress: Boolean) {
+    Surface(
+        shape = RoundedCornerShape(26.dp),
+        color = White,
+        shadowElevation = 3.dp,
+        border = BorderStroke(1.dp, OrangeLight.copy(alpha = 0.85f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(18.dp)
+        ) {
+            Surface(shape = RoundedCornerShape(18.dp), color = OrangePrimary, modifier = Modifier.size(62.dp)) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = if (hasSavedAddress) Icons.Filled.CheckCircle else Icons.Filled.LocationOn,
+                        contentDescription = null,
+                        tint = White,
+                        modifier = Modifier.size(33.dp)
+                    )
+                }
+            }
+            Column(modifier = Modifier.padding(start = 14.dp)) {
+                Text(
+                    text = if (hasSavedAddress) "Dados da última compra carregados" else "Informe onde vamos entregar",
+                    color = GrayDark,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 24.sp
+                )
+                Text(
+                    text = if (hasSavedAddress) {
+                        "Confira os dados e altere apenas o que mudou."
+                    } else {
+                        "Digite o CEP para completar rua, bairro e cidade automaticamente."
+                    },
+                    color = GrayMedium,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun AddressPreviewCard(
     street: String,
     neighborhood: String,
@@ -323,30 +377,33 @@ private fun AddressPreviewCard(
     state: String
 ) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
         color = White,
-        shadowElevation = 1.dp,
+        shadowElevation = 3.dp,
+        border = BorderStroke(1.dp, OrangeLight.copy(alpha = 0.75f)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(18.dp)
         ) {
-            Surface(shape = RoundedCornerShape(12.dp), color = OrangeLight, modifier = Modifier.size(42.dp)) {
-                androidx.compose.foundation.layout.Box(contentAlignment = Alignment.Center) {
+            Surface(shape = RoundedCornerShape(16.dp), color = OrangeLight, modifier = Modifier.size(58.dp)) {
+                Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Filled.LocationOn,
                         contentDescription = null,
                         tint = OrangePrimary,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(30.dp)
                     )
                 }
             }
-            Column(modifier = Modifier.padding(start = 12.dp)) {
+            Column(modifier = Modifier.padding(start = 14.dp)) {
                 Text(
                     text = if (street.isBlank()) "Digite o CEP para encontrar o endereço" else street,
                     color = GrayDark,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    lineHeight = 23.sp
                 )
                 Text(
                     text = if (neighborhood.isBlank()) {
@@ -355,7 +412,8 @@ private fun AddressPreviewCard(
                         "$neighborhood, $city/$state"
                     },
                     color = GrayMedium,
-                    fontSize = 13.sp
+                    fontSize = 14.sp,
+                    lineHeight = 19.sp
                 )
             }
         }
@@ -369,37 +427,42 @@ private fun OrderSummaryCard(
     total: Double
 ) {
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(24.dp),
         color = White,
-        shadowElevation = 1.dp,
+        shadowElevation = 3.dp,
+        border = BorderStroke(1.dp, GrayBorder.copy(alpha = 0.7f)),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(18.dp)) {
             Text(
                 text = "Resumo do pedido",
-                style = MaterialTheme.typography.titleMedium,
-                color = GrayDark
+                color = GrayDark,
+                fontSize = 19.sp,
+                fontWeight = FontWeight.Bold
             )
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             SummaryLine(label = "Subtotal", value = subtotal)
             SummaryLine(label = "Taxa de entrega", value = deliveryFee)
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             HorizontalDivider(color = GrayBorder)
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(text = "Total", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = GrayDark)
-                Text(
-                    text = "Bs ${"%.2f".format(total)}",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = OrangePrimary
-                )
+                Text(text = "Total", fontWeight = FontWeight.Bold, fontSize = 21.sp, color = GrayDark)
+                Surface(shape = RoundedCornerShape(999.dp), color = OrangeSoft) {
+                    Text(
+                        text = "Bs ${"%.2f".format(total)}",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        color = OrangePrimary,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
             }
         }
     }
@@ -493,7 +556,7 @@ private fun SummaryLine(label: String, value: Double) {
             .padding(vertical = 3.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text = label, color = GrayMedium, fontSize = 14.sp)
-        Text(text = "Bs ${"%.2f".format(value)}", color = GrayDark, fontSize = 14.sp)
+        Text(text = label, color = GrayMedium, fontSize = 15.sp)
+        Text(text = "Bs ${"%.2f".format(value)}", color = GrayDark, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
     }
 }
