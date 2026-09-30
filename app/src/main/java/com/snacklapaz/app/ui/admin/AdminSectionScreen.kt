@@ -426,16 +426,42 @@ private fun ProductAdminCard(
             Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
                 Text(product.nome, fontWeight = FontWeight.Bold, color = GrayDark, fontSize = 20.sp, lineHeight = 24.sp)
                 Text("Bs ${"%.2f".format(product.preco)}", color = OrangePrimary, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                Text("Estoque: ${product.estoque} • ${product.status ?: "ATIVO"}", color = stockColor(product.estoque), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text("Categoria: ${product.idCategoria ?: "não definida"}", color = GrayMedium, fontSize = 13.sp)
+                Text("Estoque: ${product.estoque}", color = stockColor(product.estoque), fontWeight = FontWeight.Bold, fontSize = 14.sp)
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 16.dp).fillMaxWidth()) {
-            AdminActionButton("Editar", onEdit, Modifier.weight(1f))
-            AdminActionButton(if (product.isActive()) "Pausar" else "Ativar", onToggle, Modifier.weight(1f), filled = false)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 12.dp).fillMaxWidth()) {
+            StockInfoPill(text = product.status ?: "ATIVO", color = if (product.isActive()) SuccessGreen else WarningAmber)
+            StockInfoPill(text = stockActionHint(product.estoque), color = stockColor(product.estoque))
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 10.dp).fillMaxWidth()) {
-            AdminActionButton("- Estoque", { onStockChange((product.estoque - 1).coerceAtLeast(0)) }, Modifier.weight(1f), filled = false)
-            AdminActionButton("+ Estoque", { onStockChange(product.estoque + 1) }, Modifier.weight(1f))
+        if (!product.descricao.isNullOrBlank()) {
+            Text(
+                text = product.descricao,
+                color = GrayMedium,
+                fontSize = 13.sp,
+                lineHeight = 17.sp,
+                modifier = Modifier.padding(top = 10.dp)
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 14.dp).fillMaxWidth()) {
+            AdminCompactTextButton("Editar", onEdit, modifier = Modifier.weight(1f))
+            AdminCompactTextButton(
+                text = if (product.isActive()) "Pausar" else "Ativar",
+                onClick = onToggle,
+                modifier = Modifier.weight(1f),
+                filled = false
+            )
+            AdminStockButton(
+                icon = Icons.Filled.Remove,
+                contentDescription = "Diminuir estoque",
+                onClick = { onStockChange((product.estoque - 1).coerceAtLeast(0)) },
+                filled = false
+            )
+            AdminStockButton(
+                icon = Icons.Filled.Add,
+                contentDescription = "Aumentar estoque",
+                onClick = { onStockChange(product.estoque + 1) }
+            )
         }
     }
 }
@@ -526,16 +552,23 @@ private fun PaymentAdminCard(
 private fun CustomerAdminCard(customer: ClienteDto) {
     AdminCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Surface(shape = CircleShape, color = OrangeLight, modifier = Modifier.size(54.dp)) {
+            Surface(shape = CircleShape, color = OrangeLight, modifier = Modifier.size(58.dp)) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Filled.People, contentDescription = null, tint = OrangePrimary, modifier = Modifier.size(28.dp))
+                    Icon(Icons.Filled.People, contentDescription = null, tint = OrangePrimary, modifier = Modifier.size(30.dp))
                 }
             }
-            Column(modifier = Modifier.padding(start = 12.dp)) {
+            Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
                 Text(customer.adminDisplayName(), color = GrayDark, fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                Text("Telefone: ${customer.telefone ?: "não informado"}", color = GrayMedium, fontSize = 15.sp)
                 Text(if (customer.isAdmin) "Administrador" else "Cliente", color = if (customer.isAdmin) OrangePrimary else GrayMedium, fontWeight = FontWeight.Bold, fontSize = 14.sp)
             }
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 14.dp)) {
+            CustomerDetailRow("E-mail", customer.email.orDash())
+            CustomerDetailRow("Telefone", customer.telefone.orDash())
+            CustomerDetailRow("CPF", customer.cpf.orDash())
+            CustomerDetailRow("Nascimento", customer.dataNascimento.orDash())
+            CustomerDetailRow("ID interno", "#${customer.idCliente}")
+            CustomerDetailRow("Auth", customer.authId?.take(8)?.uppercase()?.let { "$it..." } ?: "não vinculado")
         }
     }
 }
@@ -713,6 +746,34 @@ private fun AdminActionButton(
 }
 
 @Composable
+private fun AdminCompactTextButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    filled: Boolean = true
+) {
+    if (filled) {
+        Button(
+            onClick = onClick,
+            colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary),
+            shape = RoundedCornerShape(14.dp),
+            modifier = modifier.height(42.dp)
+        ) {
+            Text(text, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        }
+    } else {
+        OutlinedButton(
+            onClick = onClick,
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(1.dp, OrangePrimary.copy(alpha = 0.6f)),
+            modifier = modifier.height(42.dp)
+        ) {
+            Text(text, color = OrangePrimary, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        }
+    }
+}
+
+@Composable
 private fun AdminStatusButton(text: String, selected: Boolean, onClick: () -> Unit) {
     val background = if (selected) OrangePrimary else OrangeLight
     val textColor = if (selected) White else OrangePrimary
@@ -727,6 +788,21 @@ private fun AdminStatusButton(text: String, selected: Boolean, onClick: () -> Un
         TextButton(onClick = onClick) {
             Text(text, color = textColor, fontWeight = FontWeight.Bold, fontSize = 13.sp, textAlign = TextAlign.Center)
         }
+    }
+}
+
+@Composable
+private fun CustomerDetailRow(label: String, value: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Text(label, color = GrayMedium, fontSize = 13.sp, modifier = Modifier.weight(0.8f))
+        Text(
+            value,
+            color = GrayDark,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 14.sp,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1.2f)
+        )
     }
 }
 
@@ -965,4 +1041,8 @@ private fun ClienteDto.adminDisplayName(): String {
         !telefone.isNullOrBlank() -> "Cliente ${telefone}"
         else -> if (isAdmin) "Administrador da loja" else "Nome não informado"
     }
+}
+
+private fun String?.orDash(): String {
+    return takeIf { !it.isNullOrBlank() } ?: "não informado"
 }
