@@ -42,9 +42,15 @@ data class AdminReportStats(
     val totalSold: Double = 0.0,
     val ordersCount: Int = 0,
     val averageTicket: Double = 0.0,
-    val bestSellers: List<Pair<Int, Int>> = emptyList(),
+    val bestSellers: List<AdminBestSeller> = emptyList(),
     val lowStockProducts: List<ProdutoDto> = emptyList(),
     val ordersByStatus: Map<String, Int> = emptyMap()
+)
+
+data class AdminBestSeller(
+    val productId: Int,
+    val productName: String,
+    val quantity: Int
 )
 
 class AdminViewModel(
@@ -191,6 +197,7 @@ class AdminViewModel(
                 val products = productRepository.getAdminProducts()
                 val orders = orderRepository.getAdminOrders()
                 val items = orderRepository.getAdminOrderItems()
+                val productsById = products.associateBy { it.idProduto }
                 val filteredOrders = orders.filterByPeriod(selectedPeriod)
                 val filteredOrderIds = filteredOrders.map { it.idPedido }.toSet()
                 val filteredItems = items.filter { it.idPedido in filteredOrderIds }
@@ -204,7 +211,14 @@ class AdminViewModel(
                             .mapValues { entry -> entry.value.sumOf { it.quantidade } }
                             .toList()
                             .sortedByDescending { it.second }
-                            .take(5),
+                            .take(5)
+                            .map { (productId, quantity) ->
+                                AdminBestSeller(
+                                    productId = productId,
+                                    productName = productsById[productId]?.nome ?: "Produto sem nome",
+                                    quantity = quantity
+                                )
+                            },
                         lowStockProducts = products.filter { it.estoque <= 5 }.sortedBy { it.estoque },
                         ordersByStatus = filteredOrders.groupingBy { it.status }.eachCount()
                     )

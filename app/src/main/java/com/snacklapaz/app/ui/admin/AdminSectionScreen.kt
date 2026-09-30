@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
@@ -22,13 +23,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.Warning
@@ -38,6 +39,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -195,6 +197,8 @@ private fun InventoryAdmin(adminViewModel: AdminViewModel) {
 private fun OrdersAdmin(adminViewModel: AdminViewModel) {
     val statuses = listOf("RECEBIDO", "CONFIRMADO", "PREPARANDO", "SAIU_PARA_ENTREGA", "ENTREGUE", "CANCELADO")
     var pendingChange by remember { mutableStateOf<Pair<PedidoDto, String>?>(null) }
+    val customers = (adminViewModel.customersState as? UiState.Success)?.data.orEmpty()
+        .associateBy { it.idCliente }
 
     pendingChange?.let { (order, status) ->
         ConfirmDialog(
@@ -222,6 +226,7 @@ private fun OrdersAdmin(adminViewModel: AdminViewModel) {
                     items(state.data, key = { it.idPedido }) { order ->
                         OrderAdminCard(
                             order = order,
+                            customer = customers[order.idCliente],
                             statuses = statuses,
                             onStatusClick = { status -> pendingChange = order to status }
                         )
@@ -236,6 +241,10 @@ private fun OrdersAdmin(adminViewModel: AdminViewModel) {
 private fun PaymentsAdmin(adminViewModel: AdminViewModel) {
     val statuses = listOf("PENDENTE", "APROVADO", "RECUSADO", "CANCELADO", "REEMBOLSADO")
     var pendingChange by remember { mutableStateOf<Pair<PagamentoDto, String>?>(null) }
+    val orders = (adminViewModel.ordersState as? UiState.Success)?.data.orEmpty()
+        .associateBy { it.idPedido }
+    val customers = (adminViewModel.customersState as? UiState.Success)?.data.orEmpty()
+        .associateBy { it.idCliente }
 
     pendingChange?.let { (payment, status) ->
         ConfirmDialog(
@@ -261,7 +270,13 @@ private fun PaymentsAdmin(adminViewModel: AdminViewModel) {
                     adminEmptyItem("Nenhum pagamento encontrado.")
                 } else {
                     items(state.data, key = { it.idPagamento }) { payment ->
-                        PaymentAdminCard(payment = payment, statuses = statuses, onStatusClick = { pendingChange = payment to it })
+                        val order = orders[payment.idPedido]
+                        PaymentAdminCard(
+                            payment = payment,
+                            customer = order?.let { customers[it.idCliente] },
+                            statuses = statuses,
+                            onStatusClick = { pendingChange = payment to it }
+                        )
                     }
                 }
             }
@@ -365,7 +380,7 @@ private fun ReportsAdmin(adminViewModel: AdminViewModel) {
                     AdminEmptyBlock("Nenhum dado disponível para este período.")
                 }
                 ReportMetric("Total vendido", "Bs ${"%.2f".format(report.totalSold)}", Icons.Filled.CreditCard)
-                ReportMetric("Pedidos", report.ordersCount.toString(), Icons.Filled.ReceiptLong)
+                ReportMetric("Pedidos", report.ordersCount.toString(), Icons.AutoMirrored.Filled.ReceiptLong)
                 ReportMetric("Ticket médio", "Bs ${"%.2f".format(report.averageTicket)}", Icons.Filled.CheckCircle)
                 AdminCard {
                     Text("Mais vendidos", color = GrayDark, fontWeight = FontWeight.Bold, fontSize = 18.sp)
@@ -373,7 +388,7 @@ private fun ReportsAdmin(adminViewModel: AdminViewModel) {
                         Text("Nenhum item vendido no período.", color = GrayMedium, modifier = Modifier.padding(top = 8.dp))
                     } else {
                         report.bestSellers.forEachIndexed { index, item ->
-                            Text("${index + 1}. Produto #${item.first} - ${item.second} unidade(s)", color = GrayDark, modifier = Modifier.padding(top = 8.dp))
+                            BestSellerRow(position = index + 1, productName = item.productName, quantity = item.quantity)
                         }
                     }
                 }
@@ -383,7 +398,7 @@ private fun ReportsAdmin(adminViewModel: AdminViewModel) {
                         Text("Nenhum pedido no período.", color = GrayMedium, modifier = Modifier.padding(top = 8.dp))
                     } else {
                         report.ordersByStatus.forEach { (status, count) ->
-                            Text("${status.humanStatus()}: $count", color = GrayDark, modifier = Modifier.padding(top = 8.dp))
+                            StatusCountRow(status = status.humanStatus(), count = count)
                         }
                     }
                 }
@@ -405,20 +420,22 @@ private fun ProductAdminCard(
                 model = product.imagem,
                 contentDescription = product.nome,
                 modifier = Modifier
-                    .size(74.dp)
+                    .size(86.dp)
                     .background(GrayLight, RoundedCornerShape(16.dp))
             )
             Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
-                Text(product.nome, fontWeight = FontWeight.Bold, color = GrayDark, fontSize = 18.sp, lineHeight = 22.sp)
-                Text("Bs ${"%.2f".format(product.preco)}", color = OrangePrimary, fontWeight = FontWeight.Bold)
-                Text("Estoque: ${product.estoque} • ${product.status ?: "ATIVO"}", color = stockColor(product.estoque), fontSize = 13.sp)
+                Text(product.nome, fontWeight = FontWeight.Bold, color = GrayDark, fontSize = 20.sp, lineHeight = 24.sp)
+                Text("Bs ${"%.2f".format(product.preco)}", color = OrangePrimary, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                Text("Estoque: ${product.estoque} • ${product.status ?: "ATIVO"}", color = stockColor(product.estoque), fontWeight = FontWeight.Bold, fontSize = 14.sp)
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 12.dp)) {
-            AdminSmallButton("Editar", onEdit)
-            AdminSmallButton(if (product.isActive()) "Pausar" else "Ativar", onToggle)
-            AdminSmallButton("+", { onStockChange(product.estoque + 1) })
-            AdminSmallButton("-", { onStockChange((product.estoque - 1).coerceAtLeast(0)) })
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 16.dp).fillMaxWidth()) {
+            AdminActionButton("Editar", onEdit, Modifier.weight(1f))
+            AdminActionButton(if (product.isActive()) "Pausar" else "Ativar", onToggle, Modifier.weight(1f), filled = false)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 10.dp).fillMaxWidth()) {
+            AdminActionButton("- Estoque", { onStockChange((product.estoque - 1).coerceAtLeast(0)) }, Modifier.weight(1f), filled = false)
+            AdminActionButton("+ Estoque", { onStockChange(product.estoque + 1) }, Modifier.weight(1f))
         }
     }
 }
@@ -433,35 +450,59 @@ private fun InventoryCard(product: ProdutoDto, onStockChange: (Int) -> Unit) {
                 }
             }
             Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
-                Text(product.nome, color = GrayDark, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                Text(stockLabel(product.estoque), color = stockColor(product.estoque), fontWeight = FontWeight.Bold)
+                Text(product.nome, color = GrayDark, fontWeight = FontWeight.Bold, fontSize = 19.sp, lineHeight = 23.sp)
+                Text(stockLabel(product.estoque), color = stockColor(product.estoque), fontWeight = FontWeight.Bold, fontSize = 15.sp)
             }
-            AdminSmallButton("-", { onStockChange((product.estoque - 1).coerceAtLeast(0)) })
-            AdminSmallButton("+", { onStockChange(product.estoque + 1) })
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 14.dp).fillMaxWidth()) {
+            AdminActionButton("Diminuir", { onStockChange((product.estoque - 1).coerceAtLeast(0)) }, Modifier.weight(1f), filled = false)
+            AdminActionButton("Adicionar", { onStockChange(product.estoque + 1) }, Modifier.weight(1f))
         }
     }
 }
 
 @Composable
-private fun OrderAdminCard(order: PedidoDto, statuses: List<String>, onStatusClick: (String) -> Unit) {
+private fun OrderAdminCard(
+    order: PedidoDto,
+    customer: ClienteDto?,
+    statuses: List<String>,
+    onStatusClick: (String) -> Unit
+) {
     AdminCard {
-        Text("Pedido nº ${order.idPedido}", fontWeight = FontWeight.Bold, color = GrayDark, fontSize = 18.sp)
-        Text("Cliente #${order.idCliente} • Bs ${"%.2f".format(order.valorTotal)}", color = GrayMedium)
+        Text("Pedido nº ${order.idPedido}", fontWeight = FontWeight.Bold, color = GrayDark, fontSize = 21.sp)
+        Text(customer?.adminDisplayName() ?: "Cliente cadastrado", color = GrayDark, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+        Text("Total: Bs ${"%.2f".format(order.valorTotal)}", color = OrangePrimary, fontWeight = FontWeight.Bold, fontSize = 17.sp, modifier = Modifier.padding(top = 2.dp))
         StatusBadge(order.status)
+        Text("Atualizar status", color = GrayDark, fontWeight = FontWeight.Bold, fontSize = 15.sp, modifier = Modifier.padding(top = 14.dp))
         FlowButtons(statuses) { status ->
-            AdminSmallButton(status.humanStatus(), { onStatusClick(status) })
+            AdminStatusButton(
+                text = status.humanStatus(),
+                selected = order.status.equals(status, ignoreCase = true),
+                onClick = { onStatusClick(status) }
+            )
         }
     }
 }
 
 @Composable
-private fun PaymentAdminCard(payment: PagamentoDto, statuses: List<String>, onStatusClick: (String) -> Unit) {
+private fun PaymentAdminCard(
+    payment: PagamentoDto,
+    customer: ClienteDto?,
+    statuses: List<String>,
+    onStatusClick: (String) -> Unit
+) {
     AdminCard {
-        Text("Pagamento nº ${payment.idPagamento}", color = GrayDark, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-        Text("Pedido nº ${payment.idPedido} • ${payment.metodo} • Bs ${"%.2f".format(payment.valor)}", color = GrayMedium)
+        Text(customer?.adminDisplayName() ?: "Cliente cadastrado", color = GrayDark, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+        Text("Pedido nº ${payment.idPedido} • ${payment.metodo}", color = GrayMedium, fontSize = 15.sp)
+        Text("Bs ${"%.2f".format(payment.valor)}", color = OrangePrimary, fontWeight = FontWeight.Bold, fontSize = 19.sp, modifier = Modifier.padding(top = 3.dp))
         StatusBadge(payment.status)
+        Text("Atualizar pagamento", color = GrayDark, fontWeight = FontWeight.Bold, fontSize = 15.sp, modifier = Modifier.padding(top = 14.dp))
         FlowButtons(statuses) { status ->
-            AdminSmallButton(status.humanStatus(), { onStatusClick(status) })
+            AdminStatusButton(
+                text = status.humanStatus(),
+                selected = payment.status.equals(status, ignoreCase = true),
+                onClick = { onStatusClick(status) }
+            )
         }
     }
 }
@@ -476,9 +517,9 @@ private fun CustomerAdminCard(customer: ClienteDto) {
                 }
             }
             Column(modifier = Modifier.padding(start = 12.dp)) {
-                Text("Cliente #${customer.idCliente}", color = GrayDark, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Text("Telefone: ${customer.telefone ?: "não informado"}", color = GrayMedium)
-                Text(if (customer.isAdmin) "Administrador" else "Cliente", color = if (customer.isAdmin) OrangePrimary else GrayMedium)
+                Text(customer.adminDisplayName(), color = GrayDark, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                Text("Telefone: ${customer.telefone ?: "não informado"}", color = GrayMedium, fontSize = 15.sp)
+                Text(if (customer.isAdmin) "Administrador" else "Cliente", color = if (customer.isAdmin) OrangePrimary else GrayMedium, fontWeight = FontWeight.Bold, fontSize = 14.sp)
             }
         }
     }
@@ -496,8 +537,8 @@ private fun CategoryAdminCard(category: CategoriaDto, onEdit: () -> Unit, onTogg
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 12.dp)) {
-            AdminSmallButton("Editar", onEdit)
-            AdminSmallButton(if (category.status.equals("ATIVA", true)) "Desativar" else "Ativar", onToggle)
+            AdminActionButton("Editar", onEdit, Modifier.weight(1f))
+            AdminActionButton(if (category.status.equals("ATIVA", true)) "Desativar" else "Ativar", onToggle, Modifier.weight(1f), filled = false)
         }
     }
 }
@@ -599,15 +640,15 @@ private fun AdminListScaffold(
             Text(title, color = GrayDark, fontWeight = FontWeight.Bold, fontSize = 25.sp, lineHeight = 30.sp)
             Text(subtitle, color = GrayMedium, fontSize = 14.sp, lineHeight = 20.sp, modifier = Modifier.padding(top = 4.dp))
             if (actionLabel != null && onActionClick != null) {
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(16.dp))
                 Button(
                     onClick = onActionClick,
                     colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth().height(52.dp)
+                    shape = RoundedCornerShape(18.dp),
+                    modifier = Modifier.fillMaxWidth().height(58.dp)
                 ) {
                     Icon(Icons.Filled.Add, contentDescription = null)
-                    Text(actionLabel, modifier = Modifier.padding(start = 8.dp), fontWeight = FontWeight.Bold)
+                    Text(actionLabel, modifier = Modifier.padding(start = 8.dp), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
             }
         }
@@ -620,26 +661,65 @@ private fun AdminCard(content: @Composable ColumnScope.() -> Unit) {
     Surface(
         shape = RoundedCornerShape(22.dp),
         color = White,
-        shadowElevation = 2.dp,
+        shadowElevation = 3.dp,
         border = BorderStroke(1.dp, GrayBorder.copy(alpha = 0.65f)),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(16.dp), content = content)
+        Column(modifier = Modifier.padding(18.dp), content = content)
     }
 }
 
 @Composable
-private fun AdminSmallButton(text: String, onClick: () -> Unit) {
-    TextButton(onClick = onClick) {
-        Text(text, color = OrangePrimary, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+private fun AdminActionButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    filled: Boolean = true
+) {
+    if (filled) {
+        Button(
+            onClick = onClick,
+            colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary),
+            shape = RoundedCornerShape(14.dp),
+            modifier = modifier.height(46.dp)
+        ) {
+            Text(text, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        }
+    } else {
+        OutlinedButton(
+            onClick = onClick,
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(1.dp, OrangePrimary.copy(alpha = 0.55f)),
+            modifier = modifier.height(46.dp)
+        ) {
+            Text(text, color = OrangePrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        }
+    }
+}
+
+@Composable
+private fun AdminStatusButton(text: String, selected: Boolean, onClick: () -> Unit) {
+    val background = if (selected) OrangePrimary else OrangeLight
+    val textColor = if (selected) White else OrangePrimary
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = background,
+        border = BorderStroke(1.dp, OrangePrimary.copy(alpha = if (selected) 0f else 0.25f)),
+        modifier = Modifier
+            .height(44.dp)
+            .widthIn(min = 104.dp)
+    ) {
+        TextButton(onClick = onClick) {
+            Text(text, color = textColor, fontWeight = FontWeight.Bold, fontSize = 13.sp, textAlign = TextAlign.Center)
+        }
     }
 }
 
 @Composable
 private fun FlowButtons(values: List<String>, item: @Composable (String) -> Unit) {
-    Column(modifier = Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        values.chunked(3).forEach { rowValues ->
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        values.chunked(2).forEach { rowValues ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 rowValues.forEach { item(it) }
             }
         }
@@ -679,6 +759,41 @@ private fun ReportMetric(label: String, value: String, icon: ImageVector) {
                 Text(value, color = GrayDark, fontWeight = FontWeight.Bold, fontSize = 23.sp)
                 Text(label, color = GrayMedium, fontSize = 14.sp)
             }
+        }
+    }
+}
+
+@Composable
+private fun BestSellerRow(position: Int, productName: String, quantity: Int) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 10.dp)
+    ) {
+        Surface(shape = CircleShape, color = OrangeLight, modifier = Modifier.size(34.dp)) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(position.toString(), color = OrangePrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            }
+        }
+        Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
+            Text(productName, color = GrayDark, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text("$quantity unidade(s) vendida(s)", color = GrayMedium, fontSize = 13.sp)
+        }
+    }
+}
+
+@Composable
+private fun StatusCountRow(status: String, count: Int) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+    ) {
+        Text(status, color = GrayDark, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, modifier = Modifier.weight(1f))
+        Surface(shape = RoundedCornerShape(999.dp), color = OrangeLight) {
+            Text(count.toString(), color = OrangePrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp))
         }
     }
 }
@@ -773,4 +888,12 @@ private fun stockColor(stock: Int): Color {
 
 private fun String.humanStatus(): String {
     return lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
+}
+
+private fun ClienteDto.adminDisplayName(): String {
+    return when {
+        !telefone.isNullOrBlank() -> "Cliente ${telefone}"
+        authId != null && authId.length >= 6 -> "Cliente ${authId.take(6).uppercase()}"
+        else -> if (isAdmin) "Administrador da loja" else "Cliente cadastrado"
+    }
 }
