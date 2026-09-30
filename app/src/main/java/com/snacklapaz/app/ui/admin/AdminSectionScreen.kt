@@ -444,29 +444,33 @@ private fun ProductAdminCard(
 private fun InventoryCard(product: ProdutoDto, onStockChange: (Int) -> Unit) {
     AdminCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Surface(shape = CircleShape, color = stockColor(product.estoque).copy(alpha = 0.13f), modifier = Modifier.size(54.dp)) {
+            Surface(shape = CircleShape, color = stockColor(product.estoque).copy(alpha = 0.13f), modifier = Modifier.size(50.dp)) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Filled.Inventory2, contentDescription = null, tint = stockColor(product.estoque), modifier = Modifier.size(28.dp))
+                    Icon(Icons.Filled.Inventory2, contentDescription = null, tint = stockColor(product.estoque), modifier = Modifier.size(26.dp))
                 }
             }
             Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
                 Text(product.nome, color = GrayDark, fontWeight = FontWeight.Bold, fontSize = 19.sp, lineHeight = 23.sp)
-                Text(stockLabel(product.estoque), color = stockColor(product.estoque), fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Text("Quantidade atual: ${product.estoque}", color = GrayDark, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Text(stockLabel(product.estoque), color = stockColor(product.estoque), fontWeight = FontWeight.Bold, fontSize = 14.sp)
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 14.dp).fillMaxWidth()) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 12.dp).fillMaxWidth()) {
+            StockInfoPill(text = product.status ?: "ATIVO", color = if (product.isActive()) SuccessGreen else WarningAmber)
+            StockInfoPill(text = stockActionHint(product.estoque), color = stockColor(product.estoque))
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 12.dp).fillMaxWidth()) {
+            Spacer(modifier = Modifier.weight(1f))
             AdminStockButton(
                 icon = Icons.Filled.Remove,
                 contentDescription = "Diminuir estoque",
                 onClick = { onStockChange((product.estoque - 1).coerceAtLeast(0)) },
-                modifier = Modifier.weight(1f),
                 filled = false
             )
             AdminStockButton(
                 icon = Icons.Filled.Add,
                 contentDescription = "Aumentar estoque",
-                onClick = { onStockChange(product.estoque + 1) },
-                modifier = Modifier.weight(1f)
+                onClick = { onStockChange(product.estoque + 1) }
             )
         }
     }
@@ -731,27 +735,43 @@ private fun AdminStockButton(
     icon: ImageVector,
     contentDescription: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
     filled: Boolean = true
 ) {
     if (filled) {
         Button(
             onClick = onClick,
             colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary),
-            shape = RoundedCornerShape(18.dp),
-            modifier = modifier.height(52.dp)
+            shape = RoundedCornerShape(14.dp),
+            modifier = Modifier
+                .widthIn(min = 74.dp)
+                .height(42.dp)
         ) {
-            Icon(icon, contentDescription = contentDescription, tint = White, modifier = Modifier.size(26.dp))
+            Icon(icon, contentDescription = contentDescription, tint = White, modifier = Modifier.size(22.dp))
         }
     } else {
         OutlinedButton(
             onClick = onClick,
-            shape = RoundedCornerShape(18.dp),
+            shape = RoundedCornerShape(14.dp),
             border = BorderStroke(1.5.dp, OrangePrimary.copy(alpha = 0.7f)),
-            modifier = modifier.height(52.dp)
+            modifier = Modifier
+                .widthIn(min = 74.dp)
+                .height(42.dp)
         ) {
-            Icon(icon, contentDescription = contentDescription, tint = OrangePrimary, modifier = Modifier.size(26.dp))
+            Icon(icon, contentDescription = contentDescription, tint = OrangePrimary, modifier = Modifier.size(22.dp))
         }
+    }
+}
+
+@Composable
+private fun StockInfoPill(text: String, color: Color) {
+    Surface(shape = RoundedCornerShape(999.dp), color = color.copy(alpha = 0.12f)) {
+        Text(
+            text = text,
+            color = color,
+            fontWeight = FontWeight.Bold,
+            fontSize = 12.sp,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+        )
     }
 }
 
@@ -915,6 +935,14 @@ private fun stockLabel(stock: Int): String {
         stock <= 0 -> "Sem estoque"
         stock <= 5 -> "Estoque baixo: $stock"
         else -> "Estoque normal: $stock"
+    }
+}
+
+private fun stockActionHint(stock: Int): String {
+    return when {
+        stock <= 0 -> "Oculto no catálogo"
+        stock <= 5 -> "Repor em breve"
+        else -> "Disponível para venda"
     }
 }
 
