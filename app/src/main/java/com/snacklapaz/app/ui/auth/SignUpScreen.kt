@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,7 +44,14 @@ fun SignUpScreen(
     var phone by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var formError by remember { mutableStateOf<String?>(null) }
+
+    // Só navega DEPOIS que o cadastro realmente terminar com sucesso.
+    LaunchedEffect(authViewModel.isLoggedIn) {
+        if (authViewModel.isLoggedIn) {
+            onSignUpSuccess()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -73,7 +81,7 @@ fun SignUpScreen(
 
             SnackTextField(
                 value = fullName,
-                onValueChange = { fullName = it; errorMessage = null },
+                onValueChange = { fullName = it; formError = null },
                 label = "Nome completo",
                 leadingIcon = Icons.Filled.Person
             )
@@ -81,7 +89,7 @@ fun SignUpScreen(
 
             SnackTextField(
                 value = email,
-                onValueChange = { email = it; errorMessage = null },
+                onValueChange = { email = it; formError = null },
                 label = "E-mail",
                 leadingIcon = Icons.Filled.Email,
                 keyboardType = KeyboardType.Email
@@ -90,7 +98,7 @@ fun SignUpScreen(
 
             SnackTextField(
                 value = phone,
-                onValueChange = { phone = it; errorMessage = null },
+                onValueChange = { phone = it; formError = null },
                 label = "Telefone",
                 leadingIcon = Icons.Filled.Phone,
                 keyboardType = KeyboardType.Phone
@@ -99,7 +107,7 @@ fun SignUpScreen(
 
             SnackTextField(
                 value = password,
-                onValueChange = { password = it; errorMessage = null },
+                onValueChange = { password = it; formError = null },
                 label = "Senha",
                 leadingIcon = Icons.Filled.Lock,
                 isPassword = true
@@ -108,19 +116,20 @@ fun SignUpScreen(
 
             SnackTextField(
                 value = confirmPassword,
-                onValueChange = { confirmPassword = it; errorMessage = null },
+                onValueChange = { confirmPassword = it; formError = null },
                 label = "Confirmar senha",
                 leadingIcon = Icons.Filled.Lock,
                 isPassword = true,
-                errorMessage = errorMessage
+                errorMessage = formError ?: authViewModel.errorMessage
             )
 
             Spacer(modifier = Modifier.height(28.dp))
 
             SnackPrimaryButton(
-                text = "Criar conta",
+                text = if (authViewModel.isLoading) "Criando..." else "Criar conta",
+                enabled = !authViewModel.isLoading,
                 onClick = {
-                    errorMessage = when {
+                    formError = when {
                         fullName.isBlank() || email.isBlank() || phone.isBlank() || password.isBlank() ->
                             "Preencha todos os campos para continuar."
                         password.length < 6 ->
@@ -130,9 +139,8 @@ fun SignUpScreen(
                         else -> null
                     }
 
-                    if (errorMessage == null) {
+                    if (formError == null) {
                         authViewModel.signUp(fullName, email, password)
-                        onSignUpSuccess()
                     }
                 }
             )

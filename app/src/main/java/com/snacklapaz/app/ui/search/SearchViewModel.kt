@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.snacklapaz.app.data.ProductRepository
+import com.snacklapaz.app.ui.common.UiState
 import com.snacklapaz.app.ui.home.model.Category
 import com.snacklapaz.app.ui.home.model.Product
 import com.snacklapaz.app.ui.home.model.allSampleProducts
@@ -28,6 +29,9 @@ class SearchViewModel(
     var errorMessage by mutableStateOf<String?>(null)
         private set
 
+    var uiState by mutableStateOf<UiState<List<Product>>>(UiState.Success(allSampleProducts))
+        private set
+
     init {
         loadData()
     }
@@ -35,6 +39,7 @@ class SearchViewModel(
     fun loadData() {
         viewModelScope.launch {
             isLoading = products.isEmpty()
+            if (isLoading) uiState = UiState.Loading
             errorMessage = null
             try {
                 val remoteCategories = repository.getCategories()
@@ -45,9 +50,14 @@ class SearchViewModel(
                 if (remoteProducts.isNotEmpty()) {
                     products = remoteProducts
                 }
+                uiState = UiState.Success(products)
             } catch (e: Exception) {
+                e.printStackTrace()
                 if (products.isEmpty()) {
                     errorMessage = "Nao foi possivel carregar a busca. Tente novamente."
+                    uiState = UiState.Error(errorMessage!!)
+                } else {
+                    uiState = UiState.Success(products)
                 }
             } finally {
                 isLoading = false

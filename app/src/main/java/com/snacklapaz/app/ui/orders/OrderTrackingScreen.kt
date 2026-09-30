@@ -23,9 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,25 +41,13 @@ import com.snacklapaz.app.ui.theme.OrangePrimary
 import com.snacklapaz.app.ui.theme.OrderStatusColors
 import com.snacklapaz.app.ui.theme.SuccessGreen
 import com.snacklapaz.app.ui.theme.White
-import kotlinx.coroutines.delay
 
 @Composable
 fun OrderTrackingScreen(
     order: OrderSummary?,
     onBackClick: () -> Unit
 ) {
-    // Simulação local do avanço de status. Quando o Supabase entrar,
-    // isso vira uma escuta em tempo real da tabela de pedidos — o resto
-    // da tela (a timeline) continua igual.
-    var currentStatus by remember { mutableStateOf(OrderStatus.RECEIVED) }
-
-    LaunchedEffect(order?.orderNumber) {
-        val steps = OrderStatus.entries
-        for (index in steps.indices) {
-            currentStatus = steps[index]
-            if (index < steps.lastIndex) delay(2500)
-        }
-    }
+    val currentStatus = remember(order?.status) { order?.status.toOrderStatus() }
 
     Column(
         modifier = Modifier
@@ -91,6 +77,10 @@ fun OrderTrackingScreen(
                 fontSize = 15.sp
             )
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            DeliverySecurityCard(code = order.deliverySecurityCode)
+
             Spacer(modifier = Modifier.height(28.dp))
 
             OrderStatus.entries.forEachIndexed { index, status ->
@@ -105,6 +95,48 @@ fun OrderTrackingScreen(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun DeliverySecurityCard(code: String) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = White,
+        shadowElevation = 1.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Código de segurança da entrega",
+                color = GrayDark,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp
+            )
+            Text(
+                text = code,
+                color = OrangePrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 28.sp,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+            Text(
+                text = "Informe ao entregador somente quando o pedido chegar.",
+                color = GrayMedium,
+                fontSize = 12.sp
+            )
+        }
+    }
+}
+
+private fun String?.toOrderStatus(): OrderStatus {
+    return when (this?.uppercase()) {
+        "CONFIRMADO" -> OrderStatus.CONFIRMED
+        "PREPARANDO", "EM_PREPARO" -> OrderStatus.PREPARING
+        "PRONTO" -> OrderStatus.READY
+        "SAIU_PARA_ENTREGA", "EM_ENTREGA" -> OrderStatus.OUT_FOR_DELIVERY
+        "ENTREGUE" -> OrderStatus.DELIVERED
+        else -> OrderStatus.RECEIVED
     }
 }
 

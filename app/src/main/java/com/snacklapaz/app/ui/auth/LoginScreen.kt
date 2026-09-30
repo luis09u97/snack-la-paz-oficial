@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,7 +46,14 @@ fun LoginScreen(
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var formError by remember { mutableStateOf<String?>(null) }
+
+    // Só navega DEPOIS que o login realmente terminar com sucesso.
+    LaunchedEffect(authViewModel.isLoggedIn) {
+        if (authViewModel.isLoggedIn) {
+            onLoginSuccess()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -80,7 +88,7 @@ fun LoginScreen(
 
         SnackTextField(
             value = email,
-            onValueChange = { email = it; errorMessage = null },
+            onValueChange = { email = it; formError = null },
             label = "E-mail",
             leadingIcon = Icons.Filled.Email,
             keyboardType = KeyboardType.Email
@@ -89,23 +97,24 @@ fun LoginScreen(
 
         SnackTextField(
             value = password,
-            onValueChange = { password = it; errorMessage = null },
+            onValueChange = { password = it; formError = null },
             label = "Senha",
             leadingIcon = Icons.Filled.Lock,
             isPassword = true,
-            errorMessage = errorMessage
+            errorMessage = formError ?: authViewModel.errorMessage
         )
 
         Spacer(modifier = Modifier.height(28.dp))
 
         SnackPrimaryButton(
-            text = "Entrar",
+            text = if (authViewModel.isLoading) "Entrando..." else "Entrar",
+            enabled = !authViewModel.isLoading,
             onClick = {
                 if (email.isBlank() || password.isBlank()) {
-                    errorMessage = "Preencha e-mail e senha para continuar."
+                    formError = "Preencha e-mail e senha para continuar."
                 } else {
+                    formError = null
                     authViewModel.login(email, password)
-                    onLoginSuccess()
                 }
             }
         )

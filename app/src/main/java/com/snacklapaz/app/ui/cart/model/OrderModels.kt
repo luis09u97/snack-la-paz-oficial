@@ -6,10 +6,13 @@ data class DeliveryAddress(
     val street: String = "",
     val number: String = "",
     val neighborhood: String = "",
-    val complement: String = ""
+    val complement: String = "",
+    val cep: String = "",
+    val city: String = "São Paulo",
+    val state: String = "SP"
 ) {
     fun formatted(): String {
-        val base = "$street, $number - $neighborhood"
+        val base = "$street, $number - $neighborhood, $city/$state"
         return if (complement.isNotBlank()) "$base ($complement)" else base
     }
 }
@@ -28,5 +31,7 @@ data class OrderSummary(
     val total: Double,
     val address: DeliveryAddress,
     val paymentMethod: String = "Dinheiro na entrega",
-    val dateTimeMillis: Long
+    val deliverySecurityCode: String = DeliverySecurityCode.fromOrderNumber(orderNumber),
+    val dateTimeMillis: Long,
+    val status: String = "RECEBIDO"
 )
