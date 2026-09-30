@@ -1,5 +1,6 @@
 package com.snacklapaz.app.ui.checkout
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -64,21 +66,34 @@ fun AddressScreen(
     onBackClick: () -> Unit,
     onContinueToPayment: () -> Unit
 ) {
-    var fullName by remember { mutableStateOf(cartViewModel.draftAddress.fullName) }
-    var phone by remember { mutableStateOf(cartViewModel.draftAddress.phone) }
-    var cep by remember { mutableStateOf(cartViewModel.draftAddress.cep) }
-    var street by remember { mutableStateOf(cartViewModel.draftAddress.street) }
-    var number by remember { mutableStateOf(cartViewModel.draftAddress.number) }
-    var neighborhood by remember { mutableStateOf(cartViewModel.draftAddress.neighborhood) }
-    var complement by remember { mutableStateOf(cartViewModel.draftAddress.complement) }
-    var city by remember { mutableStateOf(cartViewModel.draftAddress.city) }
-    var state by remember { mutableStateOf(cartViewModel.draftAddress.state) }
+    val context = LocalContext.current
+    val savedAddress = remember { loadLastDeliveryAddress(context) }
+    val initialAddress = remember(cartViewModel.draftAddress, savedAddress) {
+        if (cartViewModel.draftAddress.hasAnyDeliveryInfo()) cartViewModel.draftAddress else savedAddress
+    }
+
+    LaunchedEffect(Unit) {
+        if (!cartViewModel.draftAddress.hasAnyDeliveryInfo() && savedAddress.hasAnyDeliveryInfo()) {
+            cartViewModel.updateDraftAddress(savedAddress)
+        }
+    }
+
+    var fullName by remember { mutableStateOf(initialAddress.fullName) }
+    var phone by remember { mutableStateOf(formatBrazilianPhone(initialAddress.phone)) }
+    var cep by remember { mutableStateOf(initialAddress.cep) }
+    var street by remember { mutableStateOf(initialAddress.street) }
+    var number by remember { mutableStateOf(initialAddress.number) }
+    var neighborhood by remember { mutableStateOf(initialAddress.neighborhood) }
+    var complement by remember { mutableStateOf(initialAddress.complement) }
+    var city by remember { mutableStateOf(initialAddress.city) }
+    var state by remember { mutableStateOf(initialAddress.state) }
     var cepStatus by remember { mutableStateOf<String?>(null) }
     var isCepLoading by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
 
     val cleanCep = cep.filter { it.isDigit() }
-    val isFormValid = fullName.isNotBlank() && phone.isNotBlank() && cleanCep.length == 8 &&
+    val cleanPhone = phone.filter { it.isDigit() }
+    val isFormValid = fullName.isNotBlank() && cleanPhone.length >= 10 && cleanCep.length == 8 &&
             street.isNotBlank() && number.isNotBlank() && neighborhood.isNotBlank()
     val currentDraft = DeliveryAddress(
         fullName = fullName,
@@ -124,6 +139,7 @@ fun AddressScreen(
     }
 
     fun leaveKeepingDraft() {
+        saveLastDeliveryAddress(context, currentDraft)
         cartViewModel.updateDraftAddress(currentDraft)
         onBackClick()
     }
@@ -199,10 +215,11 @@ fun AddressScreen(
             SnackTextField(
                 value = phone,
                 onValueChange = {
-                    phone = it
-                    cartViewModel.updateDraftAddress(currentDraft.copy(phone = it))
+                    val maskedPhone = formatBrazilianPhone(it)
+                    phone = maskedPhone
+                    cartViewModel.updateDraftAddress(currentDraft.copy(phone = maskedPhone))
                 },
-                label = "Telefone",
+                label = "Telefone com DDD",
                 leadingIcon = Icons.Filled.Phone,
                 keyboardType = KeyboardType.Phone
             )
@@ -288,6 +305,7 @@ fun AddressScreen(
                             city = city,
                             state = state
                         )
+                        saveLastDeliveryAddress(context, address)
                         cartViewModel.updateDraftAddress(address)
                         onContinueToPayment()
                     }
@@ -407,6 +425,65 @@ private suspend fun lookupCep(cep: String): ViaCepResponse? {
 }
 
 private val viaCepJson = Json { ignoreUnknownKeys = true }
+
+private const val LAST_ADDRESS_PREFS = "snack_la_paz_last_address"
+
+private fun DeliveryAddress.hasAnyDeliveryInfo(): Boolean {
+    return listOf(fullName, phone, street, number, neighborhood, complement, cep)
+        .any { it.isNotBlank() }
+}
+
+private fun loadLastDeliveryAddress(context: Context): DeliveryAddress {
+    val prefs = context.getSharedPreferences(LAST_ADDRESS_PREFS, Context.MODE_PRIVATE)
+    return DeliveryAddress(
+        fullName = prefs.getString("fullName", "").orEmpty(),
+        phone = prefs.getString("phone", "").orEmpty(),
+        street = prefs.getString("street", "").orEmpty(),
+        number = prefs.getString("number", "").orEmpty(),
+        neighborhood = prefs.getString("neighborhood", "").orEmpty(),
+        complement = prefs.getString("complement", "").orEmpty(),
+        cep = prefs.getString("cep", "").orEmpty(),
+        city = prefs.getString("city", "São Paulo").orEmpty(),
+        state = prefs.getString("state", "SP").orEmpty()
+    )
+}
+
+private fun saveLastDeliveryAddress(context: Context, address: DeliveryAddress) {
+    context.getSharedPreferences(LAST_ADDRESS_PREFS, Context.MODE_PRIVATE)
+        .edit()
+        .putString("fullName", address.fullName)
+        .putString("phone", address.phone)
+        .putString("street", address.street)
+        .putString("number", address.number)
+        .putString("neighborhood", address.neighborhood)
+        .putString("complement", address.complement)
+        .putString("cep", address.cep)
+        .putString("city", address.city)
+        .putString("state", address.state)
+        .apply()
+}
+
+private fun formatBrazilianPhone(raw: String): String {
+    val digits = raw.filter { it.isDigit() }.take(11)
+    if (digits.isEmpty()) return ""
+
+    return when {
+        digits.length <= 2 -> "(${digits}"
+        digits.length <= 6 -> "(${digits.take(2)}) ${digits.drop(2)}"
+        digits.length <= 10 -> {
+            val area = digits.take(2)
+            val prefix = digits.drop(2).take(4)
+            val suffix = digits.drop(6)
+            "($area) $prefix-$suffix"
+        }
+        else -> {
+            val area = digits.take(2)
+            val prefix = digits.drop(2).take(5)
+            val suffix = digits.drop(7)
+            "($area) $prefix-$suffix"
+        }
+    }
+}
 
 @Composable
 private fun SummaryLine(label: String, value: Double) {
